@@ -15,6 +15,7 @@
         <label><input type="radio" name="mode" value="leetcode" /> Function <small>LeetCode</small></label>
       </fieldset>
       <span id="status" role="status"></span>
+      <span id="account" class="account" hidden></span>
     </header>
 
     <div id="banner" class="banner" role="alert" hidden></div>
@@ -44,6 +45,7 @@
           <div class="controls-row">
             <span id="counter"></span>
             <span>
+              <button id="save-btn" title="Save to My problems" hidden>💾 Save</button>
               <button id="share-btn" title="Copy a link to this code and input">🔗 Share</button>
               <button id="edit-btn">✎ Edit code</button>
             </span>
@@ -62,6 +64,34 @@
         </div>
       </section>
     </main>
+
+    <dialog id="save-dialog" aria-labelledby="save-title">
+      <form id="save-form" novalidate>
+        <h2 id="save-title">Save problem</h2>
+        <label>Title <input name="title" maxlength="200" required /></label>
+        <label>Problem link <input name="url" type="url" placeholder="https://leetcode.com/problems/…" /></label>
+        <label
+          >Difficulty
+          <select name="difficulty">
+            <option value="">—</option>
+            <option>Easy</option>
+            <option>Medium</option>
+            <option>Hard</option>
+          </select>
+        </label>
+        <label>Tags <input name="tags" placeholder="two pointers, binary search" /></label>
+        <label
+          >Key insight
+          <textarea name="notes" rows="3" placeholder="The idea in your own words, e.g. “monotonic stack: pop while smaller”"></textarea>
+        </label>
+        <label class="check"><input type="checkbox" name="shared" /> Anyone with the link can view it</label>
+        <p id="save-error" class="form-error" role="alert"></p>
+        <div class="dialog-actions">
+          <button type="button" id="save-cancel">Cancel</button>
+          <button type="submit" class="primary">Save</button>
+        </div>
+      </form>
+    </dialog>
 
     <script type="module" src="app.js"></script>
   </body>

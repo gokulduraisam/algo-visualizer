@@ -1,9 +1,13 @@
-// Share links: mode, code and input travel in the URL hash (#m=...&c=...&i=...), which
-// browsers never send to the server. The extension builds the same format (extension/extract.js).
+// Share links, in the URL hash (browsers never send it to the server):
+//   #p=<id>                      a saved problem (signed-in Save + Share); short
+//   #m=...&c=...&i=...&run=1     code and input in the link itself; works without an account
+// The extension builds the long form too (extension/extract.js), plus page=<problem link>.
 
 const MODES = new Set(["stdin", "leetcode"]);
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export function encodeShare({ mode, code, input, run = false }) {
+export function encodeShare({ problemId, mode, code, input, run = false }) {
+  if (problemId) return `#p=${problemId}`;
   const params = new URLSearchParams({ m: mode });
   if (code != null) params.set("c", code);
   if (input != null) params.set("i", input);
@@ -11,10 +15,14 @@ export function encodeShare({ mode, code, input, run = false }) {
   return `#${params}`;
 }
 
-/** {mode, code (null = keep the editor's), input, run} from a hash, or null if it isn't a share link. */
+/** {problemId} or {mode, code (null = keep the editor's), input, run, page?}, or null if it isn't a share link. */
 export function decodeShare(hash) {
   const params = new URLSearchParams(hash.replace(/^#/, ""));
+  const problemId = params.get("p");
+  if (problemId) return UUID.test(problemId) ? { problemId } : null;
   const mode = params.get("m");
   if (!MODES.has(mode)) return null;
-  return { mode, code: params.get("c"), input: params.get("i") ?? "", run: params.get("run") === "1" };
+  const shared = { mode, code: params.get("c"), input: params.get("i") ?? "", run: params.get("run") === "1" };
+  if (params.has("page")) shared.page = params.get("page");
+  return shared;
 }

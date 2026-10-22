@@ -33,7 +33,7 @@
     const code = leetcodeCode();
     const description = document.querySelector('[data-track-load="description_content"]');
     const input = leetcodeExample((description || document.body).innerText);
-    return visualizerLink({ mode: "leetcode", code, input, run: true });
+    return visualizerLink({ mode: "leetcode", code, input, run: true, page: location.href });
   }
 
   function leetcodeCode() {
@@ -50,7 +50,7 @@
     const sample = document.querySelector(".sample-test .input pre");
     if (!sample) throw new Error("This page has no sample input.");
     // No code: Codeforces solutions are written elsewhere, so the site keeps your saved draft.
-    return visualizerLink({ mode: "stdin", input: codeforcesSample(sample.innerText) });
+    return visualizerLink({ mode: "stdin", input: codeforcesSample(sample.innerText), page: location.href });
   }
 
   function flash(text) {

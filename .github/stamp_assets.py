@@ -13,8 +13,8 @@ tag = f"?v={version}"
 
 # (file pattern, regex for the URL up to its closing quote, how many matches at least)
 RULES = [
-    ("viewer/index.html", r'(href="style\.css)"', 1),
-    ("viewer/index.html", r'(src="app\.js)"', 1),
+    ("viewer/*.html", r'(href="style\.css)"', 2),  # index.html and problems.html
+    ("viewer/*.html", r'(src="[\w-]+\.js)"', 2),
     ("viewer/*.js", r'(from "\./[\w-]+\.js)"', 1),
     ("viewer/*.js", r'(new Worker\("worker\.js)"', 1),
     ("viewer/worker.js", r"(fetch\(`\.\./\$\{path\})`", 1),  # the Python files

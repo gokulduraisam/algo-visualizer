@@ -47,3 +47,15 @@ test("both of LeetCode's Python editor languages count as Python", () => {
   assert.equal(isPython("cpp"), false);
   assert.equal(isPython(undefined), false);
 });
+
+test("short links carry only a saved problem's id", () => {
+  const id = "8f14e45f-ceea-467f-a0e6-1d8e3b1c2a90";
+  assert.equal(encodeShare({ problemId: id }), `#p=${id}`);
+  assert.deepEqual(decodeShare(`#p=${id}`), { problemId: id });
+  assert.equal(decodeShare("#p=not-a-uuid"), null);
+});
+
+test("extension links can carry the problem's page for the Save form", () => {
+  const url = visualizerLink({ mode: "leetcode", code: "x", input: "", page: "https://leetcode.com/problems/two-sum/" });
+  assert.equal(decodeShare(new URL(url).hash).page, "https://leetcode.com/problems/two-sum/");
+});

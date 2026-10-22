@@ -19,11 +19,13 @@ var __algoVisualizer = (() => {
   /** LeetCode's editor calls its "Python" option `python` and its "Python3" option `python3`. */
   const isPython = (languageId) => languageId === "python" || languageId === "python3";
 
-  function visualizerLink({ mode, code, input, run = false }) {
+  /** `page` is the problem's own link, so the visualizer can fill in Save's title and link. */
+  function visualizerLink({ mode, code, input, run = false, page }) {
     const params = new URLSearchParams({ m: mode });
     if (code != null) params.set("c", code);
     if (input != null) params.set("i", input);
     if (run) params.set("run", "1");
+    if (page) params.set("page", page);
     return `${VISUALIZER_URL}#${params}`;
   }
 

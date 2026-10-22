@@ -1,4 +1,6 @@
+import { initAccount } from "./account.js";
 import { buildCallTree, hasNestedCalls, layoutCallTree, renderCallTree } from "./calltree.js";
+import { cloudEnabled, loadProblem } from "./cloud.js";
 import { renderMemory } from "./render.js";
 import { decodeShare, encodeShare } from "./share.js";
 import { lineHits, nextRun } from "./steps.js";
@@ -28,6 +30,8 @@ let stepIndex = 0;
 let callTree = null; // laid-out recursion tree, or null when the run has no nested calls
 let lastRun = null; // {mode, code, input} of the run being shown, for the Share button
 let runWhenReady = false; // a share link asked to run as soon as Python has loaded
+let currentProblem = null; // the saved problem on screen (from #p=… or Save), or null
+let problemPage = null; // the problem's own page, when the extension passed it
 
 // ---------- saved drafts (per viewer; fine if storage is unavailable) ----------
 function loadDraft(mode) {
@@ -141,25 +145,64 @@ function run() {
 }
 
 // ---------- share links ----------
-/** Fill the editor from a share link (#m=...&c=...&i=...), e.g. one opened by the browser extension. */
+/** Run now if Python is ready, otherwise as soon as it is. */
+function runSoon() {
+  if (ready && timer === null) run();
+  else runWhenReady = true;
+}
+
+/** Put a mode, code and input into the editor (code null = keep the saved draft). */
+function fillEditor(mode, code, input) {
+  document.querySelector(`input[name="mode"][value="${mode}"]`).checked = true;
+  showMode(mode);
+  if (code !== null) $("code").value = code;
+  $("input").value = input;
+  updateGutter();
+  saveDraft(mode);
+}
+
+/** Apply a share link: #m=…&c=…&i=… (e.g. from the extension) or #p=<saved problem id>. */
 function applySharedLink() {
   const shared = decodeShare(location.hash);
   if (!shared) return;
-  document.querySelector(`input[name="mode"][value="${shared.mode}"]`).checked = true;
-  showMode(shared.mode);
-  if (shared.code !== null) $("code").value = shared.code; // no code (Codeforces): keep the saved draft
-  $("input").value = shared.input;
-  updateGutter();
-  saveDraft(shared.mode);
   history.replaceState(null, "", location.pathname + location.search); // refreshing keeps later edits
-  runWhenReady = shared.run;
+  if (shared.problemId) {
+    openSavedProblem(shared.problemId);
+    return;
+  }
+  currentProblem = null;
+  problemPage = shared.page ?? null;
+  fillEditor(shared.mode, shared.code, shared.input);
+  if (shared.run) runSoon();
 }
 
+async function openSavedProblem(id) {
+  if (!cloudEnabled) return showBanner("This link points to a saved problem, but accounts aren't set up on this site.", "error");
+  setStatus("Loading the saved problem…");
+  try {
+    const problem = await loadProblem(id);
+    if (!problem) {
+      showBanner("This problem isn't shared, or it was deleted. If it's yours, sign in and open it again.", "error");
+      return;
+    }
+    currentProblem = problem;
+    problemPage = problem.url;
+    fillEditor(problem.mode, problem.code, problem.input);
+    setStatus(problem.owned ? `Your saved problem: ${problem.title}` : `Shared problem: ${problem.title}`);
+    runSoon();
+  } catch (err) {
+    showBanner(err.message, "error");
+  }
+}
+
+/** Short #p=<id> link for a shared saved problem that's unchanged; otherwise code and input in the link. */
 async function copyShareLink() {
-  const link = location.origin + location.pathname + encodeShare({ ...lastRun, run: true });
+  const p = currentProblem;
+  const unchanged = p && p.is_shared && p.mode === lastRun.mode && p.code === lastRun.code && p.input === lastRun.input;
+  const link = location.origin + location.pathname + encodeShare(unchanged ? { problemId: p.id } : { ...lastRun, run: true });
   try {
     await navigator.clipboard.writeText(link);
-    setStatus("Link copied. Anyone who opens it sees this code and input.");
+    setStatus(unchanged ? "Short link copied." : "Link copied. It contains this code and input.");
   } catch {
     showBanner(`Copy this link: ${link}`, "warn");
   }
@@ -304,6 +347,8 @@ function wire() {
   for (const radio of document.querySelectorAll('input[name="mode"]')) {
     radio.onchange = () => {
       saveDraft(lastMode);
+      currentProblem = null; // a different mode means different code
+      problemPage = null;
       lastMode = currentMode();
       showMode(lastMode);
       $("edit-btn").click();
@@ -334,10 +379,6 @@ function wire() {
     if (!decodeShare(location.hash)) return;
     $("edit-btn").click();
     applySharedLink();
-    if (runWhenReady && ready) {
-      runWhenReady = false;
-      run();
-    }
   });
   window.addEventListener("resize", () => result && go(stepIndex));
   $("memory").addEventListener("scroll", () => result && go(stepIndex), { passive: true });
@@ -347,3 +388,12 @@ showMode(currentMode());
 applySharedLink();
 wire();
 startWorker();
+initAccount({
+  getRun: () => (result ? lastRun : null),
+  getProblem: () => currentProblem,
+  setProblem: (problem) => (currentProblem = problem),
+  getPage: () => problemPage,
+  beforeSignIn: () => saveDraft(currentMode()), // signing in leaves the page; keep unsaved edits
+  notify: setStatus,
+  fail: (text) => showBanner(text, "error"),
+});
