@@ -1,0 +1,44 @@
+# On every push to main: run the tests, stamp asset URLs with the commit, publish to GitHub Pages.
+# A failing test stops the deploy, so the live site keeps the last working version.
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test
+        run: |
+          python3 -m unittest discover tests
+          node --test tests/*.test.mjs
+
+      - name: Build site
+        run: |
+          mkdir _site
+          cp -r index.html viewer tracer harness _site/
+          python3 .github/stamp_assets.py _site "${GITHUB_SHA::7}"
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
