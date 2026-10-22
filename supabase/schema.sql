@@ -29,6 +29,9 @@ create index problems_user_updated on public.problems (user_id, updated_at desc)
 -- grant signed-in users access, and let RLS decide which rows they see.
 alter table public.problems enable row level security;
 grant select, insert, update, delete on table public.problems to authenticated;
+-- Projects created before Supabase's 2026 change still give `anon` default table grants.
+-- RLS already hides every row from signed-out visitors; this removes table access too.
+revoke all on table public.problems from anon;
 
 create policy "owners read their problems" on public.problems
   for select to authenticated
