@@ -1,4 +1,4 @@
-import { renderMemory } from "./render.js";
+import { renderMemory } from "./render.js?v=2";
 
 const $ = (id) => document.getElementById(id);
 const TIMEOUT_MS = 10_000;
@@ -88,7 +88,7 @@ function markErrorLine(n) {
 function startWorker() {
   ready = false;
   setStatus("Loading Python… (first time takes a few seconds)");
-  worker = new Worker("worker.js");
+  worker = new Worker("worker.js?v=2");
   worker.onmessage = ({ data }) => {
     if (data.type === "ready") {
       ready = true;

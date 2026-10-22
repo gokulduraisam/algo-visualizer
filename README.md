@@ -34,6 +34,15 @@ Drawing: classes with `left` and `right` fields are drawn as binary trees, class
 
 Command line: `python -m tracer solution.py < input.txt > trace.json`
 
+## Releasing
+
+GitHub Pages lets browsers cache files for 10 minutes. Every asset is loaded with a `?v=N`
+tag so a visitor never mixes old and new files. Bump it on each release:
+
+```
+sed -i 's/?v=2/?v=3/g' viewer/*.html viewer/*.js
+```
+
 ## Limits
 
 - Max 5000 steps per run, 10 s timeout in the browser; lists show the first 200 items.

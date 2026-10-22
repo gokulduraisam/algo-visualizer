@@ -1,5 +1,5 @@
 // Draws one trace step: frames on the left, heap objects on the right, arrows between them.
-import { groupHeap, indexMarks } from "./layout.js";
+import { groupHeap, indexMarks } from "./layout.js?v=2";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const TREE_COL = 46; // px per in-order position
