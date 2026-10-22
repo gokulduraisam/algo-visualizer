@@ -23,7 +23,10 @@
       <section class="left">
         <div id="edit">
           <label for="code">Python code</label>
-          <textarea id="code" spellcheck="false" autocapitalize="off"></textarea>
+          <div class="editor">
+            <div id="gutter" aria-hidden="true"></div>
+            <textarea id="code" spellcheck="false" autocapitalize="off" wrap="off"></textarea>
+          </div>
           <label for="input" id="input-label">Input</label>
           <textarea id="input" spellcheck="false" rows="5"></textarea>
           <button id="run" class="primary" disabled>Visualize</button>

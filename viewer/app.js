@@ -46,6 +46,42 @@ function showMode(mode) {
   $("code").value = draft.code;
   $("input").value = draft.input;
   $("input-label").textContent = EXAMPLES[mode].label;
+  updateGutter();
+}
+
+// ---------- editor line numbers ----------
+let errorLine = null;
+
+function updateGutter() {
+  const count = $("code").value.split("\n").length;
+  const rows = [];
+  for (let n = 1; n <= count; n++) {
+    const row = document.createElement("div");
+    row.textContent = n;
+    if (n === errorLine) row.className = "err";
+    rows.push(row);
+  }
+  $("gutter").replaceChildren(...rows);
+  $("gutter").scrollTop = $("code").scrollTop;
+}
+
+/** Select line `n` in the editor and scroll it into view. */
+function jumpToLine(n) {
+  const code = $("code");
+  const lines = code.value.split("\n");
+  const line = Math.min(Math.max(n, 1), lines.length);
+  const start = lines.slice(0, line - 1).reduce((sum, l) => sum + l.length + 1, 0);
+  code.focus();
+  code.setSelectionRange(start, start + lines[line - 1].length);
+  const lineHeight = parseFloat(getComputedStyle(code).lineHeight);
+  code.scrollTop = Math.max(0, (line - 1) * lineHeight - code.clientHeight / 3);
+  $("gutter").scrollTop = code.scrollTop;
+}
+
+function markErrorLine(n) {
+  errorLine = n;
+  updateGutter();
+  if (n) jumpToLine(n);
 }
 
 // ---------- worker ----------
@@ -82,6 +118,7 @@ function restartWorker() {
 
 function run() {
   hideBanner();
+  markErrorLine(null);
   saveDraft(currentMode());
   timer = setTimeout(() => {
     timer = null;
@@ -105,7 +142,10 @@ function errorText(err) {
 
 function showResult(r) {
   if (!r.trace.length) {
-    showBanner(r.error ? errorText(r.error) : "Nothing ran: the program has no steps.", "error");
+    // Nothing ran (syntax or input error): stay in the editor and point at the line.
+    const line = r.error?.line;
+    showBanner(r.error ? errorText(r.error) : "Nothing ran: the program has no steps.", "error", line);
+    markErrorLine(line);
     return;
   }
   result = r;
@@ -156,8 +196,14 @@ function go(i) {
 }
 
 // ---------- banner / status ----------
-function showBanner(text, kind) {
+function showBanner(text, kind, line) {
   $("banner").textContent = text;
+  if (line) {
+    const go = document.createElement("button");
+    go.textContent = `Go to line ${line}`;
+    go.onclick = () => jumpToLine(line);
+    $("banner").append(go);
+  }
   $("banner").className = `banner ${kind}`;
   $("banner").hidden = false;
 }
@@ -201,7 +247,13 @@ function wire() {
     if (e.key !== "Tab" || e.shiftKey) return;
     e.preventDefault();
     e.target.setRangeText("    ", e.target.selectionStart, e.target.selectionEnd, "end");
+    updateGutter();
   });
+  $("code").addEventListener("input", () => {
+    errorLine = null; // the code changed, so the old error line may be wrong
+    updateGutter();
+  });
+  $("code").addEventListener("scroll", () => ($("gutter").scrollTop = $("code").scrollTop), { passive: true });
 
   window.addEventListener("resize", () => result && go(stepIndex));
   $("memory").addEventListener("scroll", () => result && go(stepIndex), { passive: true });
