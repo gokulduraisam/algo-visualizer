@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Algo Visualizer</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Algo Visualizer</h1>
+      <fieldset class="modes">
+        <legend class="sr-only">Problem style</legend>
+        <label><input type="radio" name="mode" value="stdin" checked /> Input/output <small>Codeforces, AtCoder…</small></label>
+        <label><input type="radio" name="mode" value="leetcode" /> Function <small>LeetCode</small></label>
+      </fieldset>
+      <span id="status" role="status"></span>
+    </header>
+
+    <div id="banner" class="banner" role="alert" hidden></div>
+
+    <main>
+      <section class="left">
+        <div id="edit">
+          <label for="code">Python code</label>
+          <textarea id="code" spellcheck="false" autocapitalize="off"></textarea>
+          <label for="input" id="input-label">Input</label>
+          <textarea id="input" spellcheck="false" rows="5"></textarea>
+          <button id="run" class="primary" disabled>Visualize</button>
+        </div>
+
+        <div id="view" hidden>
+          <pre id="codeview" aria-label="Code being run"></pre>
+          <div class="controls">
+            <button id="first" title="First step">⏮</button>
+            <button id="prev" title="Previous step (←)">◀ Prev</button>
+            <button id="next" title="Next step (→)">Next ▶</button>
+            <button id="last" title="Last step">⏭</button>
+            <input id="slider" type="range" min="0" value="0" aria-label="Step" />
+          </div>
+          <div class="controls-row">
+            <span id="counter"></span>
+            <button id="edit-btn">✎ Edit code</button>
+          </div>
+          <h2>Output</h2>
+          <pre id="stdout"></pre>
+        </div>
+      </section>
+
+      <section class="right" aria-label="Memory">
+        <div id="memory" class="memory"></div>
+      </section>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
