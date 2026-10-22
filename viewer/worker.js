@@ -6,6 +6,7 @@ const VERSION = new URL(self.location.href).searchParams.get("v") || "dev";
 
 const PY_FILES = [
   "tracer/__init__.py",
+  "tracer/conditions.py",
   "tracer/encoder.py",
   "tracer/runner.py",
   "harness/__init__.py",

@@ -1,4 +1,4 @@
-import { renderMemory } from "./render.js?v=2";
+import { renderMemory } from "./render.js?v=3";
 
 const $ = (id) => document.getElementById(id);
 const TIMEOUT_MS = 10_000;
@@ -88,7 +88,7 @@ function markErrorLine(n) {
 function startWorker() {
   ready = false;
   setStatus("Loading Python… (first time takes a few seconds)");
-  worker = new Worker("worker.js?v=2");
+  worker = new Worker("worker.js?v=3");
   worker.onmessage = ({ data }) => {
     if (data.type === "ready") {
       ready = true;
@@ -179,6 +179,7 @@ function go(i) {
   const step = result.trace[stepIndex];
   const prev = result.trace[stepIndex - 1];
   for (const row of $("codeview").children) {
+    row.querySelector(".cond-badge")?.remove();
     row.classList.toggle("cur", Number(row.dataset.line) === step.line);
     row.classList.toggle("prev", !!prev && Number(row.dataset.line) === prev.line && prev.line !== step.line);
   }
@@ -192,7 +193,26 @@ function go(i) {
   if (step.exception) out += `\n⚠ ${step.exception}`;
   if (last && result.error) out += `\n✖ ${errorText(result.error)}`;
   $("stdout").textContent = out || "(no output yet)";
+  showCondition(step);
   renderMemory($("memory"), step);
+}
+
+/** For if/elif/while lines: `nums[m] <= nums[r]` → `2 <= 5` → ✅ True, plus a mark on the code line. */
+function showCondition(step) {
+  const c = step.condition;
+  const box = $("condition");
+  box.hidden = !c;
+  const line = $("codeview").querySelector(".cur");
+  if (!c) return;
+  const verdict = c.error ? "⚠️ error" : c.value ? "✅ True" : "❌ False";
+  box.className = `condition ${c.error ? "err" : c.value ? "yes" : "no"}`;
+  const part = (cls, text) => Object.assign(document.createElement("span"), { className: cls, textContent: text });
+  const parts = [part("cond-src", c.source)];
+  if (c.shown && c.shown !== c.source) parts.push(part("cond-arrow", "→"), part("cond-shown", c.shown));
+  parts.push(part("cond-arrow", "→"), part("cond-verdict", verdict));
+  if (c.error) parts.push(part("cond-error", c.error));
+  box.replaceChildren(...parts);
+  line?.append(part("cond-badge", c.error ? "⚠️" : c.value ? "✅" : "❌"));
 }
 
 // ---------- banner / status ----------
@@ -217,6 +237,7 @@ function wire() {
     $("view").hidden = true;
     $("edit").hidden = false;
     $("memory").replaceChildren();
+    $("condition").hidden = true;
     hideBanner();
     result = null;
   };

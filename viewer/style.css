@@ -139,9 +139,35 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 #counter { font-size: 13px; color: var(--muted); }
 #stdout { min-height: 3em; max-height: 25vh; overflow: auto; white-space: pre-wrap; }
 
+.right { display: flex; flex-direction: column; gap: 10px; }
+.condition {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  background: var(--panel);
+  font: 15px var(--mono);
+}
+.condition.yes { border-left-color: #2e9d55; }
+.condition.no { border-left-color: #d1453b; }
+.condition.err { border-left-color: var(--error-text); }
+.cond-src { color: var(--muted); }
+.cond-arrow { color: var(--muted); }
+.cond-shown { font-weight: 700; }
+.cond-verdict { font-weight: 700; }
+.condition.yes .cond-verdict { color: #2e9d55; }
+.condition.no .cond-verdict { color: #d1453b; }
+.cond-error { flex-basis: 100%; font-size: 12px; color: var(--error-text); }
+.cond-badge { margin-left: 10px; font-size: 12px; }
+
 .memory {
   position: relative;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   display: flex;
   align-items: flex-start;

@@ -6,6 +6,7 @@ import sys
 import threading
 import types
 
+from .conditions import condition_lines, explain
 from .encoder import HeapEncoder
 
 USER_FILE = "<solution>"
@@ -45,6 +46,7 @@ def run_trace(code, stdin_text="", max_steps=MAX_STEPS, prelude="", epilogue="")
     exec(harness_before, user_globals)
     hidden = dict(user_globals)  # prelude names stay hidden unless the user rebinds them
     encoder = HeapEncoder()
+    conditions = condition_lines(code)
     steps = result["trace"]
 
     def stdout_text():
@@ -57,7 +59,13 @@ def run_trace(code, stdin_text="", max_steps=MAX_STEPS, prelude="", epilogue="")
             if len(steps) >= max_steps:
                 # shortcut: a bare `except:` in user code can still catch this; the browser worker needs a timeout
                 raise StepLimitReached
-            steps.append(_snapshot(frame, event, arg, encoder, user_globals, hidden, stdout_text()))
+            step = _snapshot(frame, event, arg, encoder, user_globals, hidden, stdout_text())
+            test = conditions.get(frame.f_lineno) if event == "line" else None
+            if test is not None:
+                explained = explain(test, frame)
+                if explained:
+                    step["condition"] = explained
+            steps.append(step)
         return on_event
 
     saved = (sys.stdin, sys.stdout, sys.gettrace(), sys.getrecursionlimit())

@@ -40,7 +40,7 @@ GitHub Pages lets browsers cache files for 10 minutes. Every asset is loaded wit
 tag so a visitor never mixes old and new files. Bump it on each release:
 
 ```
-sed -i 's/?v=2/?v=3/g' viewer/*.html viewer/*.js
+sed -i 's/?v=3/?v=4/g' viewer/*.html viewer/*.js
 ```
 
 ## Limits
