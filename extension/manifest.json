@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Algo Visualizer",
+  "version": "1.0",
+  "description": "Adds a Visualize button to LeetCode and Codeforces problems: step through your Python solution on the example input.",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://leetcode.com/*",
+        "https://codeforces.com/problemset/problem/*",
+        "https://codeforces.com/contest/*/problem/*",
+        "https://codeforces.com/gym/*/problem/*"
+      ],
+      "js": ["extract.js", "content.js"],
+      "world": "MAIN",
+      "run_at": "document_idle"
+    }
+  ]
+}

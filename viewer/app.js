@@ -1,5 +1,6 @@
 import { buildCallTree, hasNestedCalls, layoutCallTree, renderCallTree } from "./calltree.js";
 import { renderMemory } from "./render.js";
+import { decodeShare, encodeShare } from "./share.js";
 import { lineHits, nextRun } from "./steps.js";
 
 const $ = (id) => document.getElementById(id);
@@ -25,6 +26,8 @@ let timer = null;
 let result = null;
 let stepIndex = 0;
 let callTree = null; // laid-out recursion tree, or null when the run has no nested calls
+let lastRun = null; // {mode, code, input} of the run being shown, for the Share button
+let runWhenReady = false; // a share link asked to run as soon as Python has loaded
 
 // ---------- saved drafts (per viewer; fine if storage is unavailable) ----------
 function loadDraft(mode) {
@@ -96,6 +99,10 @@ function startWorker() {
     if (data.type === "ready") {
       ready = true;
       setStatus("");
+      if (runWhenReady) {
+        runWhenReady = false;
+        run();
+      }
     } else if (data.type === "fatal") {
       setStatus(`Could not start Python: ${data.message}`);
     } else {
@@ -128,8 +135,34 @@ function run() {
     restartWorker();
     showBanner(`Stopped after ${TIMEOUT_MS / 1000} seconds. Is there an infinite loop?`, "error");
   }, TIMEOUT_MS);
-  worker.postMessage({ mode: currentMode(), code: $("code").value, input: $("input").value, maxSteps: MAX_STEPS });
+  lastRun = { mode: currentMode(), code: $("code").value, input: $("input").value };
+  worker.postMessage({ ...lastRun, maxSteps: MAX_STEPS });
   updateRunButton();
+}
+
+// ---------- share links ----------
+/** Fill the editor from a share link (#m=...&c=...&i=...), e.g. one opened by the browser extension. */
+function applySharedLink() {
+  const shared = decodeShare(location.hash);
+  if (!shared) return;
+  document.querySelector(`input[name="mode"][value="${shared.mode}"]`).checked = true;
+  showMode(shared.mode);
+  if (shared.code !== null) $("code").value = shared.code; // no code (Codeforces): keep the saved draft
+  $("input").value = shared.input;
+  updateGutter();
+  saveDraft(shared.mode);
+  history.replaceState(null, "", location.pathname + location.search); // refreshing keeps later edits
+  runWhenReady = shared.run;
+}
+
+async function copyShareLink() {
+  const link = location.origin + location.pathname + encodeShare({ ...lastRun, run: true });
+  try {
+    await navigator.clipboard.writeText(link);
+    setStatus("Link copied. Anyone who opens it sees this code and input.");
+  } catch {
+    showBanner(`Copy this link: ${link}`, "warn");
+  }
 }
 
 function updateRunButton() {
@@ -251,6 +284,7 @@ const setStatus = (text) => ($("status").textContent = text);
 // ---------- wiring ----------
 function wire() {
   $("run").onclick = run;
+  $("share-btn").onclick = copyShareLink;
   $("edit-btn").onclick = () => {
     $("view").hidden = true;
     $("edit").hidden = false;
@@ -295,10 +329,21 @@ function wire() {
   });
   $("code").addEventListener("scroll", () => ($("gutter").scrollTop = $("code").scrollTop), { passive: true });
 
+  // A share link pasted into a tab that already has the site open only changes the hash.
+  window.addEventListener("hashchange", () => {
+    if (!decodeShare(location.hash)) return;
+    $("edit-btn").click();
+    applySharedLink();
+    if (runWhenReady && ready) {
+      runWhenReady = false;
+      run();
+    }
+  });
   window.addEventListener("resize", () => result && go(stepIndex));
   $("memory").addEventListener("scroll", () => result && go(stepIndex), { passive: true });
 }
 
 showMode(currentMode());
+applySharedLink();
 wire();
 startWorker();

@@ -1,6 +1,6 @@
 // Draws one trace step: frames on the left, heap objects on the right, arrows between them.
 // Anything that changed since the previous step is highlighted.
-import { groupHeap, indexMarks, windowRanges } from "./layout.js";
+import { gridMarks, groupHeap, indexMarks, windowRanges } from "./layout.js";
 import { changedItems, changedNames } from "./steps.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -29,7 +29,8 @@ export function renderMemory(container, step, prev) {
   const marks = indexMarks(step);
   const windows = windowRanges(step);
   const changesOf = (id) => (prev ? changedItems(step.heap[id], prev.heap[id]) : new Set());
-  const { trees, chains, rest } = groupHeap(step.heap);
+  const { trees, chains, grids, rest } = groupHeap(step.heap);
+  for (const grid of grids) objects.append(gridBox(grid, step, changesOf));
   for (const nodes of trees) objects.append(treeBox(nodes, step.heap, changesOf));
   for (const row of chains) {
     const chain = el("div", "chain");
@@ -80,6 +81,43 @@ function heapBox(id, entry, { marks, window, changed } = {}) {
   else if (kind === "DICT") box.append(table(rest, true, changed));
   else if (kind === "OTHER") box.append(el("code", "", rest[1]));
   else box.append(cells(rest, kind !== "SET", { marks, window, changed }));
+  return box;
+}
+
+/** A 2D list as one table: row/column numbers, (i, j)-style marks with a crosshair, changed cells. */
+function gridBox(grid, step, changesOf) {
+  const box = el("div", "obj");
+  box.id = `obj-${grid.id}`;
+  const width = step.heap[grid.rows[0]].length - 1;
+  box.append(el("div", "obj-kind", `list ${grid.rows.length}×${width}`));
+  if (grid.sharedRows) {
+    box.append(el("div", "grid-warn", "⚠ Some rows are the same list ([[0]*n]*m?) — changing one changes all of them"));
+  }
+  const marks = gridMarks(step, grid);
+  const focus = marks[0];
+  const table = el("table", "grid");
+  const head = table.insertRow();
+  head.append(el("th"), ...Array.from({ length: width }, (_, c) => el("th", "idx", String(c))));
+  const named = new Set();
+  grid.rows.forEach((rowId, r) => {
+    const tr = table.insertRow();
+    if (!named.has(rowId)) tr.id = `obj-${rowId}`; // arrows from e.g. `row = grid[i]` land here
+    named.add(rowId);
+    tr.append(el("th", "idx", String(r)));
+    const changed = changesOf(rowId);
+    step.heap[rowId].slice(1).forEach((v, c) => {
+      const td = tr.insertCell();
+      td.append(valueEl(v));
+      if (focus && (focus.row === r || focus.col === c)) td.classList.add("in-window");
+      const here = marks.filter((m) => m.row === r && m.col === c);
+      if (here.length) {
+        td.classList.add("pointed");
+        td.append(el("span", "ptr", here.map((m) => m.names.join(",")).join(" ")));
+      }
+      if (changed === null || changed.has(c)) td.classList.add("changed");
+    });
+  });
+  box.append(table);
   return box;
 }
 

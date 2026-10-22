@@ -1,8 +1,8 @@
-// Run with: node --test tests/
+// Run with: node --test tests/*.test.mjs
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { groupHeap, indexMarks, windowRanges } from "../viewer/layout.js";
+import { gridMarks, groupHeap, indexMarks, windowRanges } from "../viewer/layout.js";
 
 const ref = (id) => ["REF", id];
 const listNode = (val, next) => ["INSTANCE", "ListNode", ["val", val], ["next", next]];
@@ -57,4 +57,39 @@ test("no window when the pair is crossed, missing, or outside the array", () => 
   assert.equal(at({ a: ref(1), lo: 2, hi: 1 }).size, 0);
   assert.equal(at({ a: ref(1), left: 0 }).size, 0);
   assert.deepEqual([...at({ a: ref(1), left: 1, right: 9 })], [["1", [1, 2]]]); // clipped to the array
+});
+
+test("a list of equal-length rows of plain values is a grid; its rows leave the plain column", () => {
+  const heap = { 1: ["LIST", ref(2), ref(3)], 2: ["LIST", 1, 0], 3: ["LIST", 0, 1], 4: ["LIST", 7] };
+  const { grids, rest } = groupHeap(heap);
+  assert.deepEqual(grids, [{ id: "1", rows: ["2", "3"], sharedRows: false }]);
+  assert.deepEqual(rest, ["4"]);
+});
+
+test("ragged, nested or empty rows are not grids (e.g. adjacency lists)", () => {
+  const notGrid = (heap) => assert.equal(groupHeap(heap).grids.length, 0);
+  notGrid({ 1: ["LIST", ref(2), ref(3)], 2: ["LIST", 1], 3: ["LIST", 0, 1] });
+  // [[[1]]]: the outer list isn't a grid (its rows hold lists), but the middle [[1]] is.
+  assert.deepEqual(groupHeap({ 1: ["LIST", ref(2)], 2: ["LIST", ref(3)], 3: ["LIST", 1] }).grids.map((g) => g.id), ["2"]);
+  notGrid({ 1: ["LIST", ref(2)], 2: ["LIST"] });
+  notGrid({ 1: ["LIST", 5, 6] });
+});
+
+test("[[0] * n] * m: every row is the same list, and the grid says so", () => {
+  const { grids } = groupHeap({ 1: ["LIST", ref(2), ref(2)], 2: ["LIST", 0, 0] });
+  assert.deepEqual(grids, [{ id: "1", rows: ["2", "2"], sharedRows: true }]);
+});
+
+test("gridMarks finds (row, col) pairs like i/j and nr/nc in the frame that holds the grid", () => {
+  const step = {
+    globals: {},
+    stack: [{ locals: { grid: ref(1), i: 1, j: 0, r: 5, nr: 0, nc: 1, ni: 9, nj: 0 } }],
+    heap: { 1: ["LIST", ref(2), ref(3)], 2: ["LIST", 1, 0], 3: ["LIST", 0, 1] },
+  };
+  assert.deepEqual(gridMarks(step, { id: "1", rows: ["2", "3"] }), [
+    { row: 1, col: 0, names: ["i", "j"] },
+    { row: 0, col: 1, names: ["nr", "nc"] },
+  ]);
+  const elsewhere = { ...step, stack: [{ locals: { i: 1, j: 0 } }] };
+  assert.deepEqual(gridMarks(elsewhere, { id: "1", rows: ["2", "3"] }), []);
 });

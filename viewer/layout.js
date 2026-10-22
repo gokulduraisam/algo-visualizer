@@ -1,23 +1,57 @@
 // Decides where heap objects go: binary-tree nodes as trees, linked-list nodes in rows,
-// everything else in a plain column. Also finds index variables (i, left, mid…) to mark array cells.
+// 2D lists as grids, everything else in a plain column. Also finds index variables
+// (i, left, mid…) to mark array cells, and (i, j)-style pairs to mark grid cells.
 
 const INDEX_NAME = /^(i|j|k|l|r|m|p|q|lo|hi|low|high|mid|left|right|start|end|begin|slow|fast|ptr|idx|index|pos|front|back|top)\d?$/;
 const ARRAY_KINDS = new Set(["LIST", "TUPLE", "DEQUE"]);
+const GRID_PAIRS = [["i", "j"], ["r", "c"], ["row", "col"], ["x", "y"], ["nr", "nc"], ["ni", "nj"]];
 
 const fieldsOf = (entry) => Object.fromEntries(entry.slice(2));
 const refId = (v) => (Array.isArray(v) && v[0] === "REF" ? String(v[1]) : null);
+const isArray = (entry) => !!entry && ARRAY_KINDS.has(entry[0]);
 
 export function groupHeap(heap) {
   const treeIds = new Set();
   const listIds = new Set();
+  const grids = [];
+  const inGrid = new Set();
+  for (const [id, entry] of Object.entries(heap)) {
+    const rows = gridRows(heap, entry);
+    if (rows) {
+      grids.push({ id, rows, sharedRows: new Set(rows).size < rows.length });
+      inGrid.add(id);
+      rows.forEach((r) => inGrid.add(r));
+    }
+  }
   const rest = [];
   for (const [id, entry] of Object.entries(heap)) {
     const f = entry && entry[0] === "INSTANCE" ? fieldsOf(entry) : {};
     if ("left" in f && "right" in f) treeIds.add(id);
     else if ("next" in f) listIds.add(id);
-    else rest.push(id);
+    else if (!inGrid.has(id)) rest.push(id);
   }
-  return { trees: layoutTrees(heap, treeIds), chains: layoutChains(heap, listIds), rest };
+  return { trees: layoutTrees(heap, treeIds), chains: layoutChains(heap, listIds), grids, rest };
+}
+
+/** Row ids if `entry` is a list of equal-length (non-empty) lists of plain values, else null. */
+function gridRows(heap, entry) {
+  if (!isArray(entry) || entry.length < 2) return null;
+  const rows = entry.slice(1).map(refId);
+  if (rows.some((r) => !r || !isArray(heap[r]))) return null;
+  const width = heap[rows[0]].length - 1;
+  const plain = (row) => row.slice(1).every((v) => !refId(v));
+  return width > 0 && rows.every((r) => heap[r].length - 1 === width && plain(heap[r])) ? rows : null;
+}
+
+/** [{row, col, names}] for (i, j)-style pairs in the frame that holds this grid. */
+export function gridMarks(step, grid) {
+  const vars = step.stack.length ? step.stack[step.stack.length - 1].locals : step.globals;
+  if (!Object.values(vars).some((v) => refId(v) === grid.id)) return [];
+  const height = grid.rows.length;
+  const width = step.heap[grid.rows[0]].length - 1;
+  return GRID_PAIRS.filter(([a, b]) => Number.isInteger(vars[a]) && Number.isInteger(vars[b]))
+    .map(([a, b]) => ({ row: vars[a], col: vars[b], names: [a, b] }))
+    .filter(({ row, col }) => row >= 0 && row < height && col >= 0 && col < width);
 }
 
 function layoutChains(heap, ids) {
