@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { decodeShare, encodeShare } from "../viewer/share.js";
 
 const require = createRequire(import.meta.url);
-const { codeforcesSample, leetcodeExample, visualizerLink } = require("../extension/extract.js");
+const { codeforcesSample, isPython, leetcodeExample, visualizerLink } = require("../extension/extract.js");
 
 const CODE = "class Solution:\n    def f(self, s: str) -> bool:\n        return s == '#&=?%+'\n";
 
@@ -39,4 +39,11 @@ test("leetcodeExample takes the first example's input from the description text"
 
 test("codeforcesSample tidies the sample input block", () => {
   assert.equal(codeforcesSample("3 \r\n1 2 3\r\n\n"), "3\n1 2 3\n");
+});
+
+test("both of LeetCode's Python editor languages count as Python", () => {
+  assert.equal(isPython("python3"), true); // LeetCode's "Python3"
+  assert.equal(isPython("python"), true); // LeetCode's "Python"
+  assert.equal(isPython("cpp"), false);
+  assert.equal(isPython(undefined), false);
 });

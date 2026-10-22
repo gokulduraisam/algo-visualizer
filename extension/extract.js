@@ -16,6 +16,9 @@ var __algoVisualizer = (() => {
     return `${lines.join("\n")}\n`;
   }
 
+  /** LeetCode's editor calls its "Python" option `python` and its "Python3" option `python3`. */
+  const isPython = (languageId) => languageId === "python" || languageId === "python3";
+
   function visualizerLink({ mode, code, input, run = false }) {
     const params = new URLSearchParams({ m: mode });
     if (code != null) params.set("c", code);
@@ -24,7 +27,7 @@ var __algoVisualizer = (() => {
     return `${VISUALIZER_URL}#${params}`;
   }
 
-  return { leetcodeExample, codeforcesSample, visualizerLink };
+  return { leetcodeExample, codeforcesSample, isPython, visualizerLink };
 })();
 
 if (typeof module !== "undefined") module.exports = __algoVisualizer; // for the Node tests

@@ -1,7 +1,7 @@
 // Adds a "Visualize" button to LeetCode and Codeforces problem pages. Runs in the page's own
 // JavaScript world (manifest "world": "MAIN") so it can read LeetCode's Monaco editor.
 (() => {
-  const { leetcodeExample, codeforcesSample, visualizerLink } = __algoVisualizer;
+  const { leetcodeExample, codeforcesSample, isPython, visualizerLink } = __algoVisualizer;
   const onLeetCode = location.hostname === "leetcode.com";
 
   const button = document.createElement("button");
@@ -42,7 +42,7 @@
     const model = models.slice().sort((a, b) => b.getValueLength() - a.getValueLength())[0];
     if (!model) throw new Error("Couldn't find the code editor. Reload the page and try again.");
     const language = model.getLanguageId?.() ?? model.getModeId?.(); // older Monaco: getModeId
-    if (language !== "python") throw new Error("Switch the editor language to Python3 first.");
+    if (!isPython(language)) throw new Error("Switch the editor language to Python3 first.");
     return model.getValue();
   }
 
