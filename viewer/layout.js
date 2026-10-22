@@ -70,16 +70,26 @@ function layoutTrees(heap, ids) {
   return trees;
 }
 
-/** Map of array heap id -> Map(index -> [variable names]) for the active frame. */
-export function indexMarks(step) {
+const WINDOW_PAIRS = [["left", "right"], ["l", "r"], ["lo", "hi"], ["low", "high"]];
+
+/** The active frame's variables and the arrays they point to: [[id, length], ...]. */
+function activeArrays(step) {
   const vars = step.stack.length ? step.stack[step.stack.length - 1].locals : step.globals;
-  const pointers = Object.entries(vars).filter(([n, v]) => Number.isInteger(v) && INDEX_NAME.test(n));
-  const marks = new Map();
+  const arrays = new Map();
   for (const v of Object.values(vars)) {
     const id = refId(v);
     const entry = id && step.heap[id];
-    if (!entry || !ARRAY_KINDS.has(entry[0]) || marks.has(id)) continue;
-    const length = entry.length - 1;
+    if (entry && ARRAY_KINDS.has(entry[0])) arrays.set(id, entry.length - 1);
+  }
+  return { vars, arrays };
+}
+
+/** Map of array heap id -> Map(index -> [variable names]) for the active frame. */
+export function indexMarks(step) {
+  const { vars, arrays } = activeArrays(step);
+  const pointers = Object.entries(vars).filter(([n, v]) => Number.isInteger(v) && INDEX_NAME.test(n));
+  const marks = new Map();
+  for (const [id, length] of arrays) {
     const byIndex = new Map();
     for (const [name, i] of pointers) {
       if (i >= 0 && i < length) byIndex.set(i, [...(byIndex.get(i) || []), name]);
@@ -87,4 +97,19 @@ export function indexMarks(step) {
     marks.set(id, new Map([...byIndex].sort((a, b) => a[0] - b[0])));
   }
   return marks;
+}
+
+/** Map of array heap id -> [from, to] for a left/right-style pair (sliding window, binary search). */
+export function windowRanges(step) {
+  const { vars, arrays } = activeArrays(step);
+  const pair = WINDOW_PAIRS.find(([a, b]) => Number.isInteger(vars[a]) && Number.isInteger(vars[b]));
+  const ranges = new Map();
+  if (!pair) return ranges;
+  const [from, to] = [vars[pair[0]], vars[pair[1]]];
+  for (const [id, length] of arrays) {
+    const lo = Math.max(from, 0);
+    const hi = Math.min(to, length - 1);
+    if (from <= to && lo <= hi) ranges.set(id, [lo, hi]);
+  }
+  return ranges;
 }

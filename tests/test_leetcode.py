@@ -120,7 +120,3 @@ class RunLeetCode(unittest.TestCase):
         r = run_leetcode(TWO_SUM, "nums = [1,")
         self.assertEqual(r["error"]["type"], "InputError")
         self.assertEqual(r["trace"], [])
-
-
-if __name__ == "__main__":
-    unittest.main()

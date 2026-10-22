@@ -1,5 +1,7 @@
 // Draws one trace step: frames on the left, heap objects on the right, arrows between them.
-import { groupHeap, indexMarks } from "./layout.js?v=3";
+// Anything that changed since the previous step is highlighted.
+import { groupHeap, indexMarks, windowRanges } from "./layout.js";
+import { changedItems, changedNames } from "./steps.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const TREE_COL = 46; // px per in-order position
@@ -12,22 +14,31 @@ function el(tag, cls, text) {
   return e;
 }
 
-export function renderMemory(container, step) {
+/** `prev` is the step before this one in the trace (undefined on the first step). */
+export function renderMemory(container, step, prev) {
   const frames = el("div", "frames");
   const objects = el("div", "objects");
   const innermost = step.stack.length - 1;
-  frames.append(frameBox("Global frame", step.globals, innermost < 0));
-  step.stack.forEach((f, i) => frames.append(frameBox(f.func_name, withoutEmptySelf(f.locals, step.heap), i === innermost)));
+  frames.append(frameBox("Global frame", step.globals, innermost < 0, changedNames(step.globals, prev?.globals)));
+  step.stack.forEach((f, i) => {
+    const before = prev?.stack[i]?.func_name === f.func_name ? prev.stack[i].locals : prev && {}; // new call: all new
+    const locals = withoutEmptySelf(f.locals, step.heap);
+    frames.append(frameBox(f.func_name, locals, i === innermost, changedNames(locals, before)));
+  });
+
   const marks = indexMarks(step);
+  const windows = windowRanges(step);
+  const changesOf = (id) => (prev ? changedItems(step.heap[id], prev.heap[id]) : new Set());
   const { trees, chains, rest } = groupHeap(step.heap);
-  for (const nodes of trees) objects.append(treeBox(nodes, step.heap));
+  for (const nodes of trees) objects.append(treeBox(nodes, step.heap, changesOf));
   for (const row of chains) {
     const chain = el("div", "chain");
-    chain.append(...row.map((id) => heapBox(id, step.heap[id])));
+    chain.append(...row.map((id) => heapBox(id, step.heap[id], { changed: changesOf(id) })));
     objects.append(chain);
   }
   for (const id of rest) {
-    if (!isEmptySolution(step.heap[id])) objects.append(heapBox(id, step.heap[id], marks.get(id)));
+    if (isEmptySolution(step.heap[id])) continue;
+    objects.append(heapBox(id, step.heap[id], { marks: marks.get(id), window: windows.get(id), changed: changesOf(id) }));
   }
   if (!objects.children.length) objects.append(el("p", "muted", "No objects yet"));
 
@@ -48,37 +59,39 @@ function withoutEmptySelf(locals, heap) {
   return rest;
 }
 
-function frameBox(title, vars, active) {
+function frameBox(title, vars, active, changed) {
   const box = el("div", active ? "frame active" : "frame");
   box.append(el("div", "frame-title", title));
   const names = Object.keys(vars);
   if (!names.length) box.append(el("div", "muted", "(empty)"));
-  else box.append(table(names.map((n) => [n, vars[n]]), false));
+  else box.append(table(names.map((n) => [n, vars[n]]), false, changed));
   return box;
 }
 
-function heapBox(id, entry, marks) {
-  const box = el("div", "obj");
+/** `changed` is a Set from changedItems, or null for an object that didn't exist one step ago. */
+function heapBox(id, entry, { marks, window, changed } = {}) {
+  const box = el("div", changed === null ? "obj fresh" : "obj");
   box.id = `obj-${id}`;
   if (!entry) return box;
   const [kind, ...rest] = entry;
   const named = kind === "INSTANCE" || kind === "OTHER";
   box.append(el("div", "obj-kind", named ? rest[0] : kind.toLowerCase()));
-  if (kind === "INSTANCE") box.append(table(rest.slice(1), false));
-  else if (kind === "DICT") box.append(table(rest, true));
+  if (kind === "INSTANCE") box.append(table(rest.slice(1), false, changed));
+  else if (kind === "DICT") box.append(table(rest, true, changed));
   else if (kind === "OTHER") box.append(el("code", "", rest[1]));
-  else box.append(cells(rest, kind !== "SET", marks));
+  else box.append(cells(rest, kind !== "SET", { marks, window, changed }));
   return box;
 }
 
 /** A binary tree drawn top-down; left/right become edges instead of fields. */
-function treeBox(nodes, heap) {
+function treeBox(nodes, heap, changesOf) {
   const tree = el("div", "tree");
   tree.style.width = `${(Math.max(...nodes.map((n) => n.x)) + 1) * TREE_COL}px`;
   tree.style.height = `${Math.max(...nodes.map((n) => n.depth)) * TREE_ROW + 44}px`;
   for (const { id, x, depth, children } of nodes) {
     const [, className, ...fields] = heap[id];
-    const node = el("div", "obj tree-node");
+    const changed = changesOf(id);
+    const node = el("div", changed === null ? "obj tree-node fresh" : changed.has("val") ? "obj tree-node changed" : "obj tree-node");
     node.id = `obj-${id}`;
     node.title = className;
     node.dataset.children = children.join(",");
@@ -93,18 +106,20 @@ function treeBox(nodes, heap) {
   return tree;
 }
 
-function table(pairs, keysAreValues) {
+/** `changed` holds the keys that changed: names for frames/objects, JSON-encoded keys for dicts. */
+function table(pairs, keysAreValues, changed) {
   const t = el("table", "vars");
   if (!pairs.length) return el("div", "muted", "(empty)");
   for (const [k, v] of pairs) {
     const row = t.insertRow();
+    if (changed?.has(keysAreValues ? JSON.stringify(k) : k)) row.className = "changed";
     row.insertCell().append(keysAreValues ? valueEl(k) : el("span", "name", k));
     row.insertCell().append(valueEl(v));
   }
   return t;
 }
 
-function cells(items, indexed, marks) {
+function cells(items, indexed, { marks, window, changed }) {
   const row = el("div", "cells");
   if (!items.length) row.append(el("span", "muted", "(empty)"));
   items.forEach((v, i) => {
@@ -112,17 +127,19 @@ function cells(items, indexed, marks) {
     const isMore = Array.isArray(v) && v[0] === "MORE";
     if (indexed && !isMore) cell.append(el("span", "idx", String(i)));
     cell.append(valueEl(v));
+    if (window && i >= window[0] && i <= window[1]) cell.classList.add("in-window");
     const names = marks?.get(i);
     if (names) {
       cell.classList.add("pointed");
       cell.append(el("span", "ptr", names.join(" ")));
     }
+    if (changed?.has(i)) cell.classList.add("changed");
     row.append(cell);
   });
   return row;
 }
 
-export function valueEl(v) {
+function valueEl(v) {
   if (v === null) return el("span", "v-none", "None");
   if (typeof v === "boolean") return el("span", "v-bool", v ? "True" : "False");
   if (typeof v === "number") return el("span", "v-num", String(v));

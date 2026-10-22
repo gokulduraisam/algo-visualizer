@@ -1,6 +1,7 @@
 """Run a program under sys.settrace and record a snapshot at every step."""
 import builtins
 import contextlib
+import inspect
 import io
 import sys
 import threading
@@ -111,11 +112,14 @@ def _snapshot(frame, event, arg, encoder, user_globals, hidden, stdout):
     f = frame
     while f is not None and f.f_code.co_filename == USER_FILE:
         if f.f_code.co_name != "<module>":
-            stack.append({
+            entry = {
                 "func_name": f.f_code.co_name,
                 "line": f.f_lineno,
                 "locals": {n: encoder.encode(v) for n, v in f.f_locals.items()},
-            })
+            }
+            if not f.f_code.co_flags & inspect.CO_NEWLOCALS:
+                entry["is_class_body"] = True  # `class X:` runs as a frame but isn't a call
+            stack.append(entry)
         f = f.f_back
     stack.reverse()  # outermost call first
     if event == "return" and stack and frame.f_code.co_name != "<module>":

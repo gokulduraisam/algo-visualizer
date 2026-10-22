@@ -1,4 +1,6 @@
-import { renderMemory } from "./render.js?v=3";
+import { buildCallTree, hasNestedCalls, layoutCallTree, renderCallTree } from "./calltree.js";
+import { renderMemory } from "./render.js";
+import { lineHits, nextRun } from "./steps.js";
 
 const $ = (id) => document.getElementById(id);
 const TIMEOUT_MS = 10_000;
@@ -22,6 +24,7 @@ let ready = false;
 let timer = null;
 let result = null;
 let stepIndex = 0;
+let callTree = null; // laid-out recursion tree, or null when the run has no nested calls
 
 // ---------- saved drafts (per viewer; fine if storage is unavailable) ----------
 function loadDraft(mode) {
@@ -88,7 +91,7 @@ function markErrorLine(n) {
 function startWorker() {
   ready = false;
   setStatus("Loading Python… (first time takes a few seconds)");
-  worker = new Worker("worker.js?v=3");
+  worker = new Worker("worker.js");
   worker.onmessage = ({ data }) => {
     if (data.type === "ready") {
       ready = true;
@@ -150,6 +153,9 @@ function showResult(r) {
   }
   result = r;
   if (r.truncated) showBanner(`Showing only the first ${r.trace.length} steps.`, "warn");
+  const roots = buildCallTree(r.trace);
+  callTree = hasNestedCalls(roots) ? layoutCallTree(roots) : null;
+  $("calltree-panel").hidden = !callTree;
   buildCodeView(r.code);
   $("edit").hidden = true;
   $("view").hidden = false;
@@ -167,7 +173,14 @@ function buildCodeView(code) {
       const num = document.createElement("span");
       num.className = "ln";
       num.textContent = i + 1;
-      row.append(num, document.createTextNode(text || " "));
+      const hits = document.createElement("span");
+      hits.className = "hits";
+      row.append(num, hits, document.createTextNode(text || " "));
+      row.title = "Click to jump to the next time this line runs";
+      row.onclick = () => {
+        const target = nextRun(result.trace, i + 1, stepIndex);
+        if (target >= 0) go(target);
+      };
       return row;
     }),
   );
@@ -178,10 +191,14 @@ function go(i) {
   stepIndex = Math.max(0, Math.min(i, result.trace.length - 1));
   const step = result.trace[stepIndex];
   const prev = result.trace[stepIndex - 1];
+  const hits = lineHits(result.trace, stepIndex);
   for (const row of $("codeview").children) {
+    const line = Number(row.dataset.line);
     row.querySelector(".cond-badge")?.remove();
-    row.classList.toggle("cur", Number(row.dataset.line) === step.line);
-    row.classList.toggle("prev", !!prev && Number(row.dataset.line) === prev.line && prev.line !== step.line);
+    row.classList.toggle("cur", line === step.line);
+    row.classList.toggle("prev", !!prev && line === prev.line && prev.line !== step.line);
+    const count = hits.get(line) || 0;
+    row.querySelector(".hits").textContent = count ? `×${count}` : "";
   }
   $("codeview").querySelector(".cur")?.scrollIntoView({ block: "nearest" });
 
@@ -194,7 +211,8 @@ function go(i) {
   if (last && result.error) out += `\n✖ ${errorText(result.error)}`;
   $("stdout").textContent = out || "(no output yet)";
   showCondition(step);
-  renderMemory($("memory"), step);
+  renderMemory($("memory"), step, prev);
+  if (callTree) renderCallTree($("calltree"), callTree, stepIndex, go);
 }
 
 /** For if/elif/while lines: `nums[m] <= nums[r]` → `2 <= 5` → ✅ True, plus a mark on the code line. */
@@ -238,6 +256,7 @@ function wire() {
     $("edit").hidden = false;
     $("memory").replaceChildren();
     $("condition").hidden = true;
+    $("calltree-panel").hidden = true;
     hideBanner();
     result = null;
   };

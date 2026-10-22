@@ -64,6 +64,12 @@ class Functions(unittest.TestCase):
         self.assertEqual(frame["locals"]["__return__"], 5)
         self.assertEqual(ret["globals"]["add"], ["FUNCTION", "add"])
 
+    def test_class_body_frames_are_marked(self):
+        r = run_trace("class S:\n    x = 1\ndef f():\n    return 2\nf()\n")
+        frames = [f for s in r["trace"] for f in s["stack"]]
+        self.assertTrue(all(f.get("is_class_body") for f in frames if f["func_name"] == "S"))
+        self.assertTrue(all("is_class_body" not in f for f in frames if f["func_name"] == "f"))
+
     def test_recursion_stacks_frames(self):
         code = "def fact(n):\n    if n <= 1:\n        return 1\n    return n * fact(n - 1)\nfact(3)\n"
         r = run_trace(code)
@@ -164,7 +170,3 @@ class UserObjects(unittest.TestCase):
         self.assertEqual(head[:3], ["INSTANCE", "ListNode", ["val", 1]])
         self.assertEqual(head[3][0], "next")
         self.assertEqual(deref(last, head[3][1]), ["INSTANCE", "ListNode", ["val", 2], ["next", None]])
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -89,7 +89,3 @@ class NeverChangesTheProgram(unittest.TestCase):
         r = run_trace("n = 3\nwhile (n := n - 1) > 0:\n    pass\nprint(n)\n")
         self.assertEqual(conditions(r, 2), [])
         self.assertEqual(r["stdout"], "0\n")
-
-
-if __name__ == "__main__":
-    unittest.main()

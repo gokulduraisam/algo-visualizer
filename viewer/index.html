@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Algo Visualizer</title>
-    <link rel="stylesheet" href="style.css?v=3" />
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <header>
@@ -53,9 +53,13 @@
       <section class="right" aria-label="Memory">
         <div id="condition" class="condition" role="status" hidden></div>
         <div id="memory" class="memory"></div>
+        <div id="calltree-panel" class="calltree-panel" hidden>
+          <h2>Calls <small>(click one to jump there)</small></h2>
+          <div id="calltree" class="calltree"></div>
+        </div>
       </section>
     </main>
 
-    <script type="module" src="app.js?v=3"></script>
+    <script type="module" src="app.js"></script>
   </body>
 </html>

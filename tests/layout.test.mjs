@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { groupHeap, indexMarks } from "../viewer/layout.js";
+import { groupHeap, indexMarks, windowRanges } from "../viewer/layout.js";
 
 const ref = (id) => ["REF", id];
 const listNode = (val, next) => ["INSTANCE", "ListNode", ["val", val], ["next", next]];
@@ -45,4 +45,16 @@ test("index-like int variables mark cells of arrays in the same frame", () => {
 test("module-level code uses globals for index marks", () => {
   const step = { globals: { a: ref(4), i: 1 }, stack: [], heap: { 4: ["LIST", 9, 9] } };
   assert.deepEqual([...indexMarks(step).get("4").entries()], [[1, ["i"]]]);
+});
+
+test("a left/right pair shades the window between them", () => {
+  const step = { globals: {}, stack: [{ locals: { nums: ref(1), l: 1, r: 3 } }], heap: { 1: ["LIST", 0, 0, 0, 0, 0] } };
+  assert.deepEqual([...windowRanges(step)], [["1", [1, 3]]]);
+});
+
+test("no window when the pair is crossed, missing, or outside the array", () => {
+  const at = (locals) => windowRanges({ globals: {}, stack: [{ locals }], heap: { 1: ["LIST", 0, 0, 0] } });
+  assert.equal(at({ a: ref(1), lo: 2, hi: 1 }).size, 0);
+  assert.equal(at({ a: ref(1), left: 0 }).size, 0);
+  assert.deepEqual([...at({ a: ref(1), left: 1, right: 9 })], [["1", [1, 2]]]); // clipped to the array
 });

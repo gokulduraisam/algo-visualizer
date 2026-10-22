@@ -12,6 +12,9 @@
   --str: #1b7f3b;
   --fn: #7a3fb8;
   --arrow: #2f6fdb;
+  --window: #e8f0fe;
+  --changed: #c9f2d3;
+  --changed-edge: #2e9d55;
   --error-bg: #fde8e8;
   --error-text: #8a1c1c;
   --warn-bg: #fff4d6;
@@ -33,6 +36,9 @@
     --str: #7fd497;
     --fn: #c79bff;
     --arrow: #6ea0ff;
+    --window: #1d2a44;
+    --changed: #1f4a2c;
+    --changed-edge: #5fd38a;
     --error-bg: #3d1d1d;
     --error-text: #ffb4b4;
     --warn-bg: #3a3112;
@@ -192,7 +198,43 @@ table.vars td:first-child { text-align: right; color: var(--muted); }
 .cells { display: flex; font: 13px var(--mono); }
 .cell { display: flex; flex-direction: column; align-items: center; min-width: 30px; padding: 2px 6px; border: 1px solid var(--border); margin-left: -1px; background: var(--panel); }
 .idx { font-size: 10px; color: var(--muted); }
+.cell.in-window { background: var(--window); }
 .cell.pointed { background: var(--cur); }
+/* changed since the previous step: wins over the window/pointer colours */
+.cell.changed, table.vars tr.changed td, .tree-node.changed { background: var(--changed); }
+table.vars tr.changed td:last-child { font-weight: 700; }
+.obj.fresh { outline: 2px dashed var(--changed-edge); outline-offset: 1px; }
+
+.line { cursor: pointer; }
+.line:hover { box-shadow: inset 3px 0 0 var(--accent); }
+.hits { display: inline-block; width: 3em; margin-right: 6px; font-size: 11px; color: var(--muted); user-select: none; }
+
+.calltree-panel { display: flex; flex-direction: column; height: 38%; min-height: 160px; }
+.calltree-panel h2 { margin: 0 0 4px; }
+.calltree-panel small { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.calltree { flex: 1; overflow: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+.calltree-canvas { position: relative; }
+.calltree-canvas svg { position: absolute; inset: 0; }
+.calltree-canvas line { stroke: var(--border); stroke-width: 1.5; }
+.calltree-canvas line.on-path { stroke: var(--accent); stroke-width: 2; }
+.call {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  font: 12px var(--mono);
+  white-space: nowrap;
+  line-height: 1.35;
+}
+.call.active { border-color: var(--accent); }
+.call.current { background: var(--accent); border-color: var(--accent); color: #fff; }
+.call.done { color: var(--muted); }
+.call .ret { color: var(--str); font-weight: 700; }
 .ptr { font-size: 11px; font-weight: 700; color: var(--accent); }
 
 .chain { display: flex; gap: 34px; align-items: flex-start; }

@@ -1,9 +1,6 @@
 // Runs Python (Pyodide) off the main thread, so an infinite loop can be stopped with worker.terminate().
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.js");
 
-// Same cache tag as worker.js?v=N, so the Python files always match this release.
-const VERSION = new URL(self.location.href).searchParams.get("v") || "dev";
-
 const PY_FILES = [
   "tracer/__init__.py",
   "tracer/conditions.py",
@@ -29,7 +26,7 @@ json.dumps(res, allow_nan=False)
 const ready = (async () => {
   const py = await loadPyodide();
   for (const path of PY_FILES) {
-    const res = await fetch(`../${path}?v=${VERSION}`);
+    const res = await fetch(`../${path}`);
     if (!res.ok) throw new Error(`could not load ${path} (HTTP ${res.status})`);
     py.FS.mkdirTree(`/app/${path.split("/")[0]}`);
     py.FS.writeFile(`/app/${path}`, await res.text());
