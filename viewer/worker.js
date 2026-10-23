@@ -20,8 +20,9 @@ req = json.loads(req_json)
 def run_one(text):
     if req["mode"] == "leetcode":
         return run_leetcode(req["code"], text, req["maxSteps"])
-    # stdin programs read whole lines, so the last line needs its newline
-    return run_trace(req["code"], text if text.endswith("\n") else text + "\n", req["maxSteps"])
+    # stdin programs read whole lines, so the last line needs its newline.
+    # (The newline escapes are doubled because this Python sits inside a JS template string.)
+    return run_trace(req["code"], text if text.endswith("\\n") else text + "\\n", req["maxSteps"])
 
 json.dumps([run_one(text) for text in req["inputs"]], allow_nan=False)
 `;
