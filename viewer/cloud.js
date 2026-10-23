@@ -7,7 +7,7 @@ import { schedule } from "./srs.js";
 const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/+esm";
 const COLUMNS =
   "id, title, url, difficulty, tags, notes, is_shared, mode, code, input, updated_at, " +
-  "due_at, interval_days, ease, reps, lapses, last_reviewed_at";
+  "due_at, interval_days, ease, reps, lapses, last_reviewed_at, solve_seconds";
 
 export const cloudEnabled = Boolean(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY);
 
@@ -29,8 +29,8 @@ function check({ data, error }, action) {
   // Missing column/table/function from 002_spaced_repetition.sql (e.g. "column problems.due_at does
   // not exist", "Could not find the function public.record_review…"): say how to fix it.
   const missing = /does not exist|could not find/i.test(error?.message ?? "");
-  if (missing && /due_at|interval_days|reviews|record_review/.test(error.message)) {
-    throw new Error("Reviews need a database update: run supabase/002_spaced_repetition.sql in the Supabase SQL Editor.");
+  if (missing && /due_at|interval_days|reviews|record_review|solve_seconds|recall_seconds|profiles/.test(error.message)) {
+    throw new Error("This needs a database update: run supabase/002_spaced_repetition.sql, then 003_goated.sql, in the Supabase SQL Editor.");
   }
   if (error) throw new Error(`${action} failed: ${error.message}`);
   return data;
@@ -101,14 +101,17 @@ export async function countDue() {
   return res.count ?? 0;
 }
 
-/** Your review history: [{rating, reviewed_at}], newest first. */
+/** Your review history: [{rating, reviewed_at, recall_seconds}], newest first. */
 export async function listReviews() {
   const sb = await client();
-  return check(await sb.from("reviews").select("rating, reviewed_at").order("reviewed_at", { ascending: false }), "Loading your reviews");
+  return check(
+    await sb.from("reviews").select("rating, reviewed_at, recall_seconds").order("reviewed_at", { ascending: false }),
+    "Loading your reviews",
+  );
 }
 
-/** Log a review and reschedule the problem. Returns the updated problem. */
-export async function recordReview(problem, rating) {
+/** Log a review (with how long recalling took) and reschedule the problem. Returns the updated problem. */
+export async function recordReview(problem, rating, recallSeconds = null) {
   const sb = await client();
   const next = schedule(problem, rating);
   const rows = check(
@@ -120,11 +123,26 @@ export async function recordReview(problem, rating) {
       p_ease: next.ease,
       p_reps: next.reps,
       p_lapses: next.lapses,
+      p_recall_seconds: recallSeconds,
     }),
     "Saving the review",
   );
   if (!rows?.length) throw new Error("Saving the review failed: the problem wasn't found.");
   return rows[0];
+}
+
+/** Your settings row ({codeforces_handle}), or an empty one. */
+export async function getProfile() {
+  const sb = await client();
+  return check(await sb.from("profiles").select("codeforces_handle").maybeSingle(), "Loading your profile") ?? { codeforces_handle: null };
+}
+
+export async function saveProfile(changes) {
+  const sb = await client();
+  const user = await currentUser();
+  if (!user) throw new Error("Sign in to save your settings.");
+  // user_id must be in the row so the upsert updates your existing row instead of adding one
+  check(await sb.from("profiles").upsert({ user_id: user.id, ...changes, updated_at: new Date().toISOString() }), "Saving your profile");
 }
 
 export async function deleteProblem(id) {

@@ -1,7 +1,7 @@
 // Adds a "Visualize" button to LeetCode and Codeforces problem pages. Runs in the page's own
 // JavaScript world (manifest "world": "MAIN") so it can read LeetCode's Monaco editor.
 (() => {
-  const { leetcodeExample, codeforcesSample, isPython, visualizerLink } = __algoVisualizer;
+  const { leetcodeExample, leetcodeExamples, testsText, codeforcesSample, isPython, visualizerLink } = __algoVisualizer;
   const onLeetCode = location.hostname === "leetcode.com";
 
   const button = document.createElement("button");
@@ -31,9 +31,21 @@
 
   function leetcodeLink() {
     const code = leetcodeCode();
-    const description = document.querySelector('[data-track-load="description_content"]');
-    const input = leetcodeExample((description || document.body).innerText);
-    return visualizerLink({ mode: "leetcode", code, input, run: true, page: location.href });
+    const description = (document.querySelector('[data-track-load="description_content"]') || document.body).innerText;
+    const examples = leetcodeExamples(description);
+    // All examples with their expected outputs, so the visualizer can grade each one.
+    const input = examples.length ? testsText(examples) : leetcodeExample(description);
+    return visualizerLink({ mode: "leetcode", code, input, run: true, page: location.href, ...leetcodeMeta() });
+  }
+
+  /** Difficulty and topic tags, best effort: a missing one just leaves that Save field empty. */
+  function leetcodeMeta() {
+    const difficulty = document.querySelector('[class*="text-difficulty-"]')?.textContent.trim();
+    const tags = [...document.querySelectorAll('a[href^="/tag/"]')].map((a) => a.textContent.trim()).filter(Boolean);
+    return {
+      difficulty: ["Easy", "Medium", "Hard"].includes(difficulty) ? difficulty : undefined,
+      tags: [...new Set(tags)].slice(0, 20),
+    };
   }
 
   function leetcodeCode() {
@@ -47,10 +59,17 @@
   }
 
   function codeforcesLink() {
-    const sample = document.querySelector(".sample-test .input pre");
-    if (!sample) throw new Error("This page has no sample input.");
-    // No code: Codeforces solutions are written elsewhere, so the site keeps your saved draft.
-    return visualizerLink({ mode: "stdin", input: codeforcesSample(sample.innerText), page: location.href });
+    const inputs = [...document.querySelectorAll(".sample-test .input pre")];
+    const outputs = [...document.querySelectorAll(".sample-test .output pre")];
+    if (!inputs.length) throw new Error("This page has no sample input.");
+    // Every sample with its expected output. No code: Codeforces solutions are written
+    // elsewhere, so the site keeps your saved draft.
+    const samples = inputs.map((pre, i) => ({
+      input: codeforcesSample(pre.innerText),
+      output: outputs[i] ? codeforcesSample(outputs[i].innerText) : "",
+    }));
+    const input = samples.every((s) => s.output) ? testsText(samples) : samples[0].input;
+    return visualizerLink({ mode: "stdin", input, page: location.href });
   }
 
   function flash(text) {

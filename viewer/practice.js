@@ -2,9 +2,12 @@
 // and the review flow (recall first, then reveal your insight, then rate).
 import { cloudEnabled, deleteProblem, listProblems, listReviews, recordReview } from "./cloud.js";
 import { mountNav, refreshProgress } from "./nav.js";
+import { initCodeforces } from "./practice-codeforces.js";
+import { renderLadder } from "./practice-ladder.js";
 import { activityGrid, practiceSummary, rankFor, streak, xpFor } from "./progress.js";
 import { encodeShare } from "./share.js";
 import { formatDays, nextIntervals, RATINGS, reviewStatus } from "./srs.js";
+import { formatDuration } from "./timer.js";
 
 const $ = (id) => document.getElementById(id);
 const RATING_LABEL = { again: "Again", hard: "Hard", good: "Good", easy: "Easy" };
@@ -12,7 +15,7 @@ const RATING_HINT = { again: "Forgot it", hard: "Got there slowly", good: "Remem
 
 let problems = [];
 let reviews = []; // [{rating, reviewed_at}], newest first
-const session = { queue: [], index: 0, done: 0, xpBefore: 0 };
+const session = { queue: [], index: 0, done: 0, xpBefore: 0, shownAt: 0, recallSeconds: null, ticker: null };
 
 // ---------- helpers ----------
 function el(tag, cls, text) {
@@ -48,6 +51,7 @@ async function main() {
   try {
     [problems, reviews] = await Promise.all([listProblems(), listReviews()]);
     renderHome();
+    initCodeforces();
   } catch (err) {
     $("today-title").textContent = "Practice couldn't load";
     showBanner(err.message);
@@ -60,6 +64,8 @@ function renderHome() {
   renderRank();
   renderActivity();
   renderLibrary();
+  renderLadder(problems);
+  $("ladder-card").hidden = false;
   $("rank-card").hidden = false;
   $("activity-card").hidden = false;
   $("library-card").hidden = problems.length === 0;
@@ -118,6 +124,10 @@ function renderActivity() {
   const { thisWeek, longTerm, weakest } = practiceSummary(problems, reviews.map((r) => r.reviewed_at));
   $("sum-week").textContent = `${thisWeek} review${thisWeek === 1 ? "" : "s"}`;
   $("sum-long").textContent = `${longTerm} of ${problems.length} problem${problems.length === 1 ? "" : "s"}`;
+  const timed = reviews.filter((r) => r.recall_seconds != null).slice(0, 30);
+  $("sum-recall").textContent = timed.length
+    ? formatDuration(timed.reduce((sum, r) => sum + r.recall_seconds, 0) / timed.length)
+    : "Not timed yet";
   $("sum-weak").replaceChildren(
     ...(weakest
       ? [weakest.tag, el("span", "sub", `forgotten ${weakest.lapses} time${weakest.lapses === 1 ? "" : "s"}`)]
@@ -156,6 +166,7 @@ function row(p) {
 
   const side = el("div", "problem-side");
   side.append(el("span", `status ${status.kind}`, status.label));
+  if (p.solve_seconds) side.append(el("span", "muted", `Solved in ${formatDuration(p.solve_seconds)}`));
   const actions = el("div", "problem-actions");
   if (p.url) {
     const source = el("a", null, "Problem page");
@@ -225,6 +236,12 @@ function showCard() {
   $("review-notes").textContent =
     p.notes || "No insight saved for this one. Replay your solution, then add one with Save → Key insight.";
   const gaps = nextIntervals(p);
+  // Time how long recalling takes: from showing the card until you reveal your insight.
+  session.shownAt = performance.now();
+  session.recallSeconds = null;
+  clearInterval(session.ticker);
+  $("recall-time").textContent = "0:00";
+  session.ticker = setInterval(() => ($("recall-time").textContent = formatDuration((performance.now() - session.shownAt) / 1000)), 1000);
   $("ratings").replaceChildren(
     ...RATINGS.map((rating, i) => {
       const b = el("button", `rating ${rating}`);
@@ -239,6 +256,8 @@ function showCard() {
 }
 
 function reveal() {
+  clearInterval(session.ticker);
+  session.recallSeconds = Math.round((performance.now() - session.shownAt) / 1000);
   $("recall").hidden = true;
   $("answer").hidden = false;
   $("ratings").querySelector(".good").focus();
@@ -249,9 +268,9 @@ async function rate(rating) {
   const buttons = [...$("ratings").querySelectorAll("button")];
   buttons.forEach((b) => (b.disabled = true));
   try {
-    const updated = await recordReview(p, rating);
+    const updated = await recordReview(p, rating, session.recallSeconds);
     problems = problems.map((x) => (x.id === p.id ? { ...x, ...updated } : x));
-    reviews = [{ rating, reviewed_at: new Date().toISOString() }, ...reviews];
+    reviews = [{ rating, reviewed_at: new Date().toISOString(), recall_seconds: session.recallSeconds }, ...reviews];
     session.done++;
     session.index++;
     showCard();
@@ -276,6 +295,7 @@ function showDone() {
 }
 
 function exitReview() {
+  clearInterval(session.ticker);
   $("review").hidden = true;
   $("home").hidden = false;
   renderHome();

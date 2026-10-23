@@ -24,8 +24,24 @@ you recall the idea first, reveal your insight, and rate yourself Again / Hard /
 (keys 1–4). Your rank climbs from Newbie to Grandmaster as you save and review; the Practice
 page also shows your streak, activity, and the topic you forget most.
 
-Accounts use Supabase: run `supabase/001_problems.sql`, then `supabase/002_spaced_repetition.sql`
-in the project's SQL Editor, and put the project URL and publishable key in `viewer/config.js`.
+Practice also has a **topic roadmap** (NeetCode 150 order, with what to study next), your
+**Codeforces** rating, solves and the rating band to practise next (from Codeforces' public
+API), and recall times. The visualizer has a **solve timer** whose time Save fills in.
+
+**Several test cases**: separate them with a `---` line and end each with `Output: …` to have it
+graded ✅/❌ (the extension fills these in from the problem's examples):
+
+```
+nums = [2,7,11,15], target = 9
+Output: [0,1]
+---
+nums = [3,2,4], target = 6
+Output: [1,2]
+```
+
+Accounts use Supabase: run `supabase/001_problems.sql`, `002_spaced_repetition.sql` and
+`003_goated.sql` in order in the project's SQL Editor, and put the project URL and publishable
+key in `viewer/config.js`.
 
 What you see at each step:
 

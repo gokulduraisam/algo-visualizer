@@ -117,7 +117,7 @@ a { color: var(--accent); }
 .modes label:has(input:checked) { background: var(--bg); box-shadow: inset 0 0 0 1px var(--border); }
 .modes input { accent-color: var(--accent); }
 .modes small { color: var(--muted); }
-#status { color: var(--muted); font-size: 13px; }
+#status { flex: 1 1 0; min-width: 0; color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---------- buttons ---------- */
 button, a.button {
@@ -344,3 +344,19 @@ svg.arrows path.tree-edge { stroke: var(--muted); stroke-width: 1.4; }
 svg.arrows { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 2; overflow: visible; }
 svg.arrows path { fill: none; stroke: var(--arrow); stroke-width: 1.6; }
 svg.arrows .arrow-head { fill: var(--arrow); stroke: none; }
+
+/* ---------- solve timer, tests ---------- */
+.code-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.solve-timer { display: flex; align-items: center; gap: 6px; }
+.solve-timer button { padding: 3px 10px; font-size: 13px; }
+.timer-display { font: 600 15px var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); min-width: 4ch; text-align: right; }
+.timer-display.running { color: var(--text); }
+.tests { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.tests-summary { font-weight: 600; margin-right: 4px; }
+.test-tab { padding: 3px 10px; font-size: 13px; }
+.test-tab.selected { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.test-tab.fail, .test-tab.error { color: var(--bad); }
+.test-tab.pass { color: var(--ok); }
+.verdict { margin: 6px 0 0; padding: 8px 12px; border-radius: 8px; font: 13px/1.5 var(--mono); white-space: pre-wrap; }
+.verdict.pass { background: color-mix(in srgb, var(--ok) 14%, var(--panel)); }
+.verdict.fail, .verdict.error, .verdict.cut-off { background: color-mix(in srgb, var(--bad) 12%, var(--panel)); }

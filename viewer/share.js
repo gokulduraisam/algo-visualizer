@@ -24,5 +24,7 @@ export function decodeShare(hash) {
   if (!MODES.has(mode)) return null;
   const shared = { mode, code: params.get("c"), input: params.get("i") ?? "", run: params.get("run") === "1" };
   if (params.has("page")) shared.page = params.get("page");
+  if (params.has("d")) shared.difficulty = params.get("d");
+  if (params.has("t")) shared.tags = params.get("t").split(",").map((t) => t.trim()).filter(Boolean);
   return shared;
 }

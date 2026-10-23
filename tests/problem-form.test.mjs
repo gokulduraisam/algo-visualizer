@@ -26,7 +26,7 @@ test("problemRow builds a clean row from the form and the run", () => {
   );
   assert.deepEqual(row, {
     title: "Two Sum", url: "https://leetcode.com/problems/two-sum/", difficulty: "Easy", tags: ["hash map"],
-    notes: "seen-map", is_shared: true, mode: "leetcode", code: RUN.code, input: "n = 3",
+    notes: "seen-map", is_shared: true, mode: "leetcode", code: RUN.code, input: "n = 3", solve_seconds: null,
   });
 });
 
@@ -44,4 +44,12 @@ test("problemRow rejects what the database would reject, with readable messages"
   assert.throws(() => problemRow({ ...form, title: "x".repeat(201) }, RUN), /title/i);
   assert.throws(() => problemRow({ ...form, tags: Array.from({ length: 21 }, (_, i) => `t${i}`).join(",") }, RUN), /tags/i);
   assert.throws(() => problemRow(form, { ...RUN, code: "x".repeat(100_001) }), /code/i);
+});
+
+test("problemRow stores the solve time from the m:ss field, or null when empty", () => {
+  const form = { title: "x", url: "", difficulty: "", tags: "", notes: "", shared: false };
+  assert.equal(problemRow({ ...form, time: "18:05" }, RUN).solve_seconds, 1085);
+  assert.equal(problemRow({ ...form, time: "" }, RUN).solve_seconds, null);
+  assert.equal(problemRow(form, RUN).solve_seconds, null); // older callers without the field
+  assert.throws(() => problemRow({ ...form, time: "later" }, RUN), /time/i);
 });

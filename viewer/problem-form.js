@@ -1,5 +1,6 @@
 // Turns the Save form into a database row, with the same limits the database enforces
-// (supabase/schema.sql), so problems show up as readable messages instead of API errors.
+// (supabase/*.sql), so problems show up as readable messages instead of API errors.
+import { parseDuration } from "./timer.js";
 
 export const DIFFICULTIES = ["Easy", "Medium", "Hard"];
 const LIMITS = { title: 200, url: 2000, tags: 20, tag: 30, notes: 20_000, code: 100_000, input: 100_000 };
@@ -23,7 +24,8 @@ export function parseTags(text) {
   return [...new Set(tags)];
 }
 
-/** form: {title, url, difficulty, tags (comma text), notes, shared}; run: {mode, code, input}. Throws on invalid input. */
+/** form: {title, url, difficulty, tags (comma text), notes, shared, time ("m:ss", optional)};
+ *  run: {mode, code, input}. Throws on invalid input. */
 export function problemRow(form, run) {
   const title = form.title.trim();
   const url = form.url.trim();
@@ -36,6 +38,8 @@ export function problemRow(form, run) {
   }
   if (form.notes.length > LIMITS.notes) throw new Error(`Notes are too long (max ${LIMITS.notes} characters).`);
   if (run.code.length > LIMITS.code || run.input.length > LIMITS.input) throw new Error("The code or input is too long to save.");
+  const solveSeconds = parseDuration(form.time ?? "");
+  if (solveSeconds !== null && solveSeconds > 86_400) throw new Error("The time must be under 24 hours.");
   return {
     title,
     url: url || null,
@@ -46,5 +50,6 @@ export function problemRow(form, run) {
     mode: run.mode,
     code: run.code,
     input: run.input,
+    solve_seconds: solveSeconds,
   };
 }

@@ -10,14 +10,15 @@
   grid-template-areas:
     "today rank"
     "activity activity"
+    "ladder cf"
     "library library";
   gap: 20px;
 }
 @media (max-width: 820px) {
-  .practice-home { grid-template-columns: 1fr; grid-template-areas: "today" "rank" "activity" "library"; }
+  .practice-home { grid-template-columns: 1fr; grid-template-areas: "today" "rank" "activity" "ladder" "cf" "library"; }
 }
 
-.today, .rank-card, .activity, .library, .review-card, .review-done {
+.today, .rank-card, .activity, .ladder-card, .cf-card, .library, .review-card, .review-done {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -127,3 +128,38 @@
 .review-done { padding: 48px 36px; text-align: center; }
 .review-done h1 { font-size: clamp(28px, 4vw, 40px); margin: 0 0 10px; }
 .review-done p { margin: 0 auto 24px; max-width: 50ch; color: var(--muted); font-size: 17px; }
+
+/* ---------- topic roadmap ---------- */
+.ladder-card { grid-area: ladder; padding: 18px 24px 20px; }
+.ladder-next { margin: 0 0 12px; }
+.ladder { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.topic { display: grid; grid-template-columns: 22px minmax(0, 1fr) 90px 56px; align-items: center; gap: 8px; font-size: 14px; }
+.topic-step { color: var(--muted); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+.topic.empty .topic-name { color: var(--muted); }
+.topic.next .topic-name { font-weight: 700; color: var(--accent); }
+.topic-bar { position: relative; height: 8px; border-radius: 99px; background: color-mix(in srgb, var(--border) 70%, var(--panel)); overflow: hidden; }
+.topic-fill, .topic-remembered { position: absolute; inset: 0 auto 0 0; border-radius: inherit; }
+.topic-fill { background: color-mix(in srgb, var(--accent) 45%, var(--panel)); }
+.topic-remembered { background: var(--ok); }
+.topic-count { color: var(--muted); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---------- Codeforces ---------- */
+.cf-card { grid-area: cf; padding: 18px 24px 20px; border-top: 6px solid var(--cf, var(--border)); }
+.cf-form { display: flex; flex-direction: column; gap: 8px; }
+.cf-form-row { display: flex; gap: 8px; }
+.cf-form input { flex: 1; min-width: 0; font: 15px var(--sans); padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); }
+.cf-stats p { margin: 0 0 6px; }
+.cf-handle { font-size: 20px; font-weight: 700; color: var(--cf); text-decoration: none; }
+.cf-rating { font-size: 30px; font-weight: 700; color: var(--cf); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.cf-rank { color: var(--muted); font-size: 13px; }
+.cf-history { display: block; width: 100%; height: 70px; margin: 8px 0; }
+.cf-history polyline { fill: none; stroke: var(--cf); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.cf-buckets { display: flex; align-items: flex-end; gap: 3px; height: 70px; margin: 6px 0 14px; overflow-x: auto; }
+.bucket { flex: 1 0 18px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 2px; }
+.bucket-bar { width: 100%; border-radius: 3px 3px 0 0; background: color-mix(in srgb, var(--cf, var(--accent)) 70%, var(--panel)); }
+.bucket-label { font-size: 9px; color: var(--muted); }
+.cf-next { margin-bottom: 14px; }
+.cf-stats h3 { margin: 0 0 4px; font-size: 14px; }
+.cf-recent { margin: 0; padding-left: 18px; font-size: 14px; }
+.recall-timer { margin: -6px 0 16px; color: var(--muted); font-size: 14px; }
+.recall-timer span { font: 600 14px var(--mono); font-variant-numeric: tabular-nums; }

@@ -4,7 +4,10 @@ import { cloudEnabled, loadProblem } from "./cloud.js";
 import { mountNav } from "./nav.js";
 import { renderMemory } from "./render.js";
 import { decodeShare, encodeShare } from "./share.js";
+import { initSolveTimer, solveSeconds } from "./solve-timer.js";
 import { lineHits, nextRun } from "./steps.js";
+import { renderTestBar, renderVerdict } from "./testbar.js";
+import { parseTestCases, verdict } from "./testcases.js";
 
 const $ = (id) => document.getElementById(id);
 const TIMEOUT_MS = 10_000;
@@ -14,12 +17,12 @@ const EXAMPLES = {
   stdin: {
     code: "n = int(input())\na = list(map(int, input().split()))\nbest = cur = a[0]\nfor x in a[1:]:\n    cur = max(x, cur + x)\n    best = max(best, cur)\nprint(best)\n",
     input: "5\n-2 1 -3 4 -1\n",
-    label: "Input (stdin)",
+    label: "Input (stdin). Add more tests after a --- line; end each with Output: … to check it.",
   },
   leetcode: {
     code: "class Solution:\n    def twoSum(self, nums: List[int], target: int) -> List[int]:\n        seen = {}\n        for i, n in enumerate(nums):\n            if target - n in seen:\n                return [seen[target - n], i]\n            seen[n] = i\n",
     input: "nums = [2,7,11,15], target = 9",
-    label: "Example input (nums = [...], target = 9) or one value per line",
+    label: "Example input: nums = [...], target = 9. Add more tests after a --- line; end each with Output: … to check it.",
   },
 };
 
@@ -33,6 +36,11 @@ let lastRun = null; // {mode, code, input} of the run being shown, for the Share
 let runWhenReady = false; // a share link asked to run as soon as Python has loaded
 let currentProblem = null; // the saved problem on screen (from #p=… or Save), or null
 let problemPage = null; // the problem's own page, when the extension passed it
+let problemMeta = {}; // {difficulty, tags} the extension read from the problem page
+let tests = []; // [{input, expected}] parsed from the input box
+let results = []; // one trace result per test
+let verdicts = []; // "pass" | "fail" | … per test
+let selectedTest = 0;
 
 // ---------- saved drafts (per viewer; fine if storage is unavailable) ----------
 function loadDraft(mode) {
@@ -117,7 +125,7 @@ function startWorker() {
         showBanner(`The tracer crashed: ${data.message}`, "error");
         restartWorker();
       } else {
-        showResult(data.result);
+        showResults(data.result);
       }
     }
     updateRunButton();
@@ -141,7 +149,8 @@ function run() {
     showBanner(`Stopped after ${TIMEOUT_MS / 1000} seconds. Is there an infinite loop?`, "error");
   }, TIMEOUT_MS);
   lastRun = { mode: currentMode(), code: $("code").value, input: $("input").value };
-  worker.postMessage({ ...lastRun, maxSteps: MAX_STEPS });
+  tests = parseTestCases(lastRun.input); // several tests: separated by "---", each may end with "Output: …"
+  worker.postMessage({ mode: lastRun.mode, code: lastRun.code, inputs: tests.map((t) => t.input), maxSteps: MAX_STEPS });
   updateRunButton();
 }
 
@@ -173,6 +182,7 @@ function applySharedLink() {
   }
   currentProblem = null;
   problemPage = shared.page ?? null;
+  problemMeta = { difficulty: shared.difficulty, tags: shared.tags };
   fillEditor(shared.mode, shared.code, shared.input);
   if (shared.run) runSoon();
 }
@@ -218,6 +228,21 @@ function updateRunButton() {
 function errorText(err) {
   const where = err.line ? ` (line ${err.line})` : "";
   return `${err.type}${where}: ${err.message}`;
+}
+
+/** All tests ran: grade each, then show the first failing one (or the first). */
+function showResults(all) {
+  results = all;
+  verdicts = all.map((r, i) => verdict(r, tests[i].expected, lastRun.mode));
+  const firstProblem = verdicts.findIndex((v) => v === "fail" || v === "error");
+  selectTest(firstProblem === -1 ? 0 : firstProblem);
+}
+
+function selectTest(i) {
+  selectedTest = i;
+  renderTestBar($("tests"), tests, verdicts, i, selectTest);
+  renderVerdict($("verdict"), tests[i], verdicts[i]);
+  showResult(results[i]);
 }
 
 function showResult(r) {
@@ -350,6 +375,7 @@ function wire() {
       saveDraft(lastMode);
       currentProblem = null; // a different mode means different code
       problemPage = null;
+      problemMeta = {};
       lastMode = currentMode();
       showMode(lastMode);
       $("edit-btn").click();
@@ -393,11 +419,14 @@ mountNav({
   beforeSignIn: () => saveDraft(currentMode()), // signing in leaves the page; keep unsaved edits
   onError: (text) => showBanner(text, "error"),
 });
+initSolveTimer();
 initSave({
   getRun: () => (result ? lastRun : null),
   getProblem: () => currentProblem,
   setProblem: (problem) => (currentProblem = problem),
   getPage: () => problemPage,
+  getMeta: () => problemMeta,
+  getSolveSeconds: solveSeconds,
   notify: setStatus,
   fail: (text) => showBanner(text, "error"),
 });

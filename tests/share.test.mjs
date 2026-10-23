@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { decodeShare, encodeShare } from "../viewer/share.js";
 
 const require = createRequire(import.meta.url);
-const { codeforcesSample, isPython, leetcodeExample, visualizerLink } = require("../extension/extract.js");
+const { codeforcesSample, isPython, leetcodeExample, leetcodeExamples, testsText, visualizerLink } = require("../extension/extract.js");
 
 const CODE = "class Solution:\n    def f(self, s: str) -> bool:\n        return s == '#&=?%+'\n";
 
@@ -58,4 +58,25 @@ test("short links carry only a saved problem's id", () => {
 test("extension links can carry the problem's page for the Save form", () => {
   const url = visualizerLink({ mode: "leetcode", code: "x", input: "", page: "https://leetcode.com/problems/two-sum/" });
   assert.equal(decodeShare(new URL(url).hash).page, "https://leetcode.com/problems/two-sum/");
+});
+
+test("leetcodeExamples reads every example's input and output", () => {
+  const text = "Example 1:\n\nInput: nums = [2,7,11,15], target = 9\nOutput: [0,1]\nExplanation: because...\n\n" +
+    "Example 2:\n\nInput: nums = [3,2,4], target = 6\nOutput: [1,2]\n\nConstraints: ...";
+  assert.deepEqual(leetcodeExamples(text), [
+    { input: "nums = [2,7,11,15], target = 9", output: "[0,1]" },
+    { input: "nums = [3,2,4], target = 6", output: "[1,2]" },
+  ]);
+});
+
+test("testsText joins examples in the visualizer's --- / Output: format", () => {
+  const text = testsText([{ input: "a = 1", output: "2" }, { input: "3\n1 2 3", output: "6\n" }]);
+  assert.equal(text, "a = 1\nOutput: 2\n---\n3\n1 2 3\nOutput: 6");
+});
+
+test("links can carry difficulty and tags for the Save form", () => {
+  const url = visualizerLink({ mode: "leetcode", code: "x", input: "", difficulty: "Medium", tags: ["Array", "Hash Table"] });
+  const shared = decodeShare(new URL(url).hash);
+  assert.equal(shared.difficulty, "Medium");
+  assert.deepEqual(shared.tags, ["Array", "Hash Table"]);
 });

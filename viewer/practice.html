@@ -53,7 +53,43 @@
             <div><dt>This week</dt><dd id="sum-week"></dd></div>
             <div><dt>Remembered long-term</dt><dd id="sum-long"></dd></div>
             <div><dt>Forgotten most</dt><dd id="sum-weak"></dd></div>
+            <div><dt>Average recall time</dt><dd id="sum-recall"></dd></div>
           </dl>
+        </div>
+      </section>
+
+      <section id="ladder-card" class="ladder-card" aria-labelledby="ladder-title" hidden>
+        <div class="section-head">
+          <h2 id="ladder-title">Topic roadmap</h2>
+          <p class="muted">NeetCode 150 order</p>
+        </div>
+        <p id="ladder-next" class="ladder-next"></p>
+        <ol id="ladder" class="ladder"></ol>
+      </section>
+
+      <section id="cf-card" class="cf-card" aria-labelledby="cf-title" hidden>
+        <div class="section-head">
+          <h2 id="cf-title">Codeforces</h2>
+          <button id="cf-change" class="link" type="button">Change handle</button>
+        </div>
+        <form id="cf-form" class="cf-form">
+          <label for="cf-handle">Your handle, to track your rating and pick what to practise</label>
+          <div class="cf-form-row">
+            <input id="cf-handle" autocomplete="off" spellcheck="false" placeholder="tourist" />
+            <button class="primary" type="submit">Connect</button>
+          </div>
+          <p id="cf-message" class="muted" role="status"></p>
+        </form>
+        <div id="cf-stats" class="cf-stats" hidden>
+          <p id="cf-name" class="cf-name"></p>
+          <p id="cf-rating" class="cf-rating"></p>
+          <p id="cf-rank" class="cf-rank"></p>
+          <p id="cf-solved"></p>
+          <svg id="cf-history" class="cf-history" role="img" preserveAspectRatio="none"></svg>
+          <div id="cf-buckets" class="cf-buckets" aria-label="Solved problems by rating"></div>
+          <div id="cf-next" class="cf-next"></div>
+          <h3>Recently solved</h3>
+          <ul id="cf-recent" class="cf-recent"></ul>
         </div>
       </section>
 
@@ -90,6 +126,7 @@
 
         <section id="recall" class="recall">
           <p class="prompt">Before you look: what's the key idea, and how would you code it?</p>
+          <p class="recall-timer">Thinking for <span id="recall-time">0:00</span></p>
           <button id="reveal" class="primary big" type="button">Show my insight <kbd>Space</kbd></button>
         </section>
 

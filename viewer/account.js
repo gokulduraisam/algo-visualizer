@@ -2,13 +2,15 @@
 import { cloudEnabled, currentUser, saveProblem } from "./cloud.js";
 import { refreshProgress } from "./nav.js";
 import { problemRow, titleFromUrl } from "./problem-form.js";
+import { formatDuration } from "./timer.js";
 
 const $ = (id) => document.getElementById(id);
 
 /**
  * hooks: getRun() -> {mode, code, input} of the run on screen (or null),
  *        getProblem() -> the saved problem on screen (or null), setProblem(problem),
- *        getPage() -> the problem's page link if known, notify(text), fail(text)
+ *        getPage() -> the problem's page link if known, getMeta() -> {difficulty, tags} from the
+ *        extension, getSolveSeconds() -> the solve timer (or null), notify(text), fail(text)
  */
 export function initSave(hooks) {
   if (!cloudEnabled) return;
@@ -29,8 +31,11 @@ async function openSaveDialog(hooks) {
   const page = problem?.url ?? hooks.getPage() ?? "";
   form.elements.title.value = problem?.title ?? titleFromUrl(page);
   form.elements.url.value = page;
-  form.elements.difficulty.value = problem?.difficulty ?? "";
-  form.elements.tags.value = (problem?.tags ?? []).join(", ");
+  const meta = hooks.getMeta() ?? {};
+  form.elements.difficulty.value = problem?.difficulty ?? meta.difficulty ?? "";
+  form.elements.tags.value = (problem?.tags ?? meta.tags ?? []).join(", ");
+  const seconds = problem?.solve_seconds ?? hooks.getSolveSeconds();
+  form.elements.time.value = seconds ? formatDuration(seconds) : "";
   form.elements.notes.value = problem?.notes ?? "";
   form.elements.shared.checked = own?.is_shared ?? false;
   $("save-error").textContent = "";
@@ -53,6 +58,7 @@ async function submitSave(hooks) {
         tags: form.elements.tags.value,
         notes: form.elements.notes.value,
         shared: form.elements.shared.checked,
+        time: form.elements.time.value,
       },
       run,
     );

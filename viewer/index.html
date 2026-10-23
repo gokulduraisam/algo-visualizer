@@ -30,7 +30,14 @@
     <main class="workspace">
       <section class="left">
         <div id="edit">
-          <label for="code">Python code</label>
+          <div class="code-head">
+            <label for="code">Python code</label>
+            <div class="solve-timer" aria-label="Solve timer">
+              <span id="timer-display" class="timer-display" aria-live="off">0:00</span>
+              <button id="timer-toggle" type="button">Start timer</button>
+              <button id="timer-reset" type="button" class="quiet" hidden>Reset</button>
+            </div>
+          </div>
           <div class="editor">
             <div id="gutter" aria-hidden="true"></div>
             <textarea id="code" spellcheck="false" autocapitalize="off" wrap="off"></textarea>
@@ -41,6 +48,7 @@
         </div>
 
         <div id="view" hidden>
+          <div id="tests" class="tests" hidden></div>
           <pre id="codeview" aria-label="Code being run"></pre>
           <div class="controls">
             <button id="first" title="First step">⏮</button>
@@ -59,6 +67,7 @@
           </div>
           <h2>Output</h2>
           <pre id="stdout"></pre>
+          <p id="verdict" class="verdict" hidden></p>
         </div>
       </section>
 
@@ -91,6 +100,7 @@
           >Key insight
           <textarea name="notes" rows="3" placeholder="The idea in your own words, e.g. “monotonic stack: pop while smaller”"></textarea>
         </label>
+        <label>Time to solve <input name="time" placeholder="m:ss, e.g. 18:05" inputmode="numeric" /></label>
         <label class="check"><input type="checkbox" name="shared" /> Anyone with the link can view it</label>
         <p id="save-error" class="form-error" role="alert"></p>
         <div class="dialog-actions">

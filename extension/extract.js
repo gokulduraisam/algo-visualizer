@@ -9,6 +9,18 @@ var __algoVisualizer = (() => {
     return match ? match[1].trim() : "";
   }
 
+  /** Every "Input: … Output: …" example of a LeetCode description. */
+  function leetcodeExamples(text) {
+    const examples = [];
+    for (const m of text.replace(/ /g, " ").matchAll(/Input:\s*([\s\S]*?)\s*Output:[ \t]*([^\n]*)/g)) {
+      examples.push({ input: m[1].trim(), output: m[2].trim() });
+    }
+    return examples;
+  }
+
+  /** Examples in the visualizer's test format: "input\nOutput: x", separated by "---" lines. */
+  const testsText = (examples) => examples.map((e) => `${e.input.trim()}\nOutput: ${e.output.trim()}`).join("\n---\n");
+
   /** A Codeforces sample input block, with Windows line endings and trailing spaces removed. */
   function codeforcesSample(text) {
     const lines = text.replace(/\r/g, "").split("\n").map((line) => line.trimEnd());
@@ -19,17 +31,19 @@ var __algoVisualizer = (() => {
   /** LeetCode's editor calls its "Python" option `python` and its "Python3" option `python3`. */
   const isPython = (languageId) => languageId === "python" || languageId === "python3";
 
-  /** `page` is the problem's own link, so the visualizer can fill in Save's title and link. */
-  function visualizerLink({ mode, code, input, run = false, page }) {
+  /** `page`, `difficulty` and `tags` describe the problem, so Save can fill itself in. */
+  function visualizerLink({ mode, code, input, run = false, page, difficulty, tags }) {
     const params = new URLSearchParams({ m: mode });
     if (code != null) params.set("c", code);
     if (input != null) params.set("i", input);
     if (run) params.set("run", "1");
     if (page) params.set("page", page);
+    if (difficulty) params.set("d", difficulty);
+    if (tags?.length) params.set("t", tags.join(","));
     return `${VISUALIZER_URL}#${params}`;
   }
 
-  return { leetcodeExample, codeforcesSample, isPython, visualizerLink };
+  return { leetcodeExample, leetcodeExamples, testsText, codeforcesSample, isPython, visualizerLink };
 })();
 
 if (typeof module !== "undefined") module.exports = __algoVisualizer; // for the Node tests
