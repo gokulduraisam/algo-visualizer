@@ -1,5 +1,5 @@
 -- Algo Visualizer: saved problems.
--- Run once in the Supabase dashboard: SQL Editor -> New query -> paste -> Run.
+-- Run once in the Supabase dashboard: SQL Editor -> New query -> paste -> Run. (Then 002_*.sql.)
 --
 -- Privacy model:
 --   * Signed-in users can read and change only their own rows (RLS below).

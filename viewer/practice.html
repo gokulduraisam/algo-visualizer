@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Practice | Algo Visualizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="practice.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./">Algo Visualizer</a>
+      <nav class="tabs" aria-label="Pages">
+        <a href="./">Visualize</a>
+        <a href="practice.html" aria-current="page">Practice <span id="due-count" class="due-count" hidden></span></a>
+      </nav>
+      <div id="account" class="account" hidden></div>
+    </header>
+
+    <div id="banner" class="banner" role="alert" hidden></div>
+
+    <main id="home" class="practice-home">
+      <section class="today" aria-labelledby="today-title">
+        <h1 id="today-title">Loading your practice…</h1>
+        <p id="today-detail" class="today-detail"></p>
+        <div class="today-actions">
+          <button id="start-review" class="primary big" type="button" hidden>Start review</button>
+          <a id="solve-new" class="button" href="./">Solve a new problem</a>
+        </div>
+      </section>
+
+      <aside id="rank-card" class="rank-card" aria-labelledby="rank-name" hidden>
+        <p class="rank-label">Your rank</p>
+        <p id="rank-name" class="rank-name"></p>
+        <div class="rank-bar" role="progressbar" aria-labelledby="rank-next" aria-valuemin="0" aria-valuemax="100">
+          <span id="rank-fill"></span>
+        </div>
+        <p id="rank-next" class="rank-next"></p>
+        <p id="streak" class="streak"></p>
+      </aside>
+
+      <section id="activity-card" class="activity" aria-labelledby="activity-title" hidden>
+        <div class="section-head">
+          <h2 id="activity-title">Reviews in the last 16 weeks</h2>
+          <p id="activity-total" class="muted"></p>
+        </div>
+        <div class="activity-body">
+          <div id="activity" class="activity-grid" role="img"></div>
+          <dl class="summary">
+            <div><dt>This week</dt><dd id="sum-week"></dd></div>
+            <div><dt>Remembered long-term</dt><dd id="sum-long"></dd></div>
+            <div><dt>Forgotten most</dt><dd id="sum-weak"></dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section id="library-card" class="library" aria-labelledby="library-title" hidden>
+        <div class="section-head">
+          <h2 id="library-title">Your problems</h2>
+          <div class="filters">
+            <input id="search" type="search" placeholder="Search titles, tags, insights" aria-label="Search your problems" />
+            <select id="difficulty" aria-label="Difficulty">
+              <option value="">Any difficulty</option>
+              <option>Easy</option>
+              <option>Medium</option>
+              <option>Hard</option>
+            </select>
+          </div>
+        </div>
+        <ul id="list" class="problem-list"></ul>
+      </section>
+    </main>
+
+    <main id="review" class="review" hidden>
+      <div class="review-top">
+        <button id="review-exit" class="quiet" type="button">Back to Practice</button>
+        <span id="review-progress" class="muted"></span>
+      </div>
+
+      <article id="review-card" class="review-card">
+        <h1 id="review-title"></h1>
+        <div id="review-chips" class="chips"></div>
+        <div class="review-links">
+          <a id="review-page" target="_blank" rel="noopener">Open the problem</a>
+          <a id="review-replay" target="_blank" rel="noopener">Replay my solution</a>
+        </div>
+
+        <section id="recall" class="recall">
+          <p class="prompt">Before you look: what's the key idea, and how would you code it?</p>
+          <button id="reveal" class="primary big" type="button">Show my insight <kbd>Space</kbd></button>
+        </section>
+
+        <section id="answer" class="answer" hidden>
+          <h2>Your insight</h2>
+          <p id="review-notes" class="insight"></p>
+          <h2>How well did you remember it?</h2>
+          <div id="ratings" class="ratings"></div>
+        </section>
+      </article>
+
+      <section id="review-done" class="review-done" hidden>
+        <h1 id="done-title"></h1>
+        <p id="done-detail"></p>
+        <button id="done-back" class="primary big" type="button">Back to Practice</button>
+      </section>
+    </main>
+
+    <script type="module" src="practice.js"></script>
+  </body>
+</html>

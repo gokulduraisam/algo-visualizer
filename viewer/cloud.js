@@ -2,9 +2,12 @@
 // `cloudEnabled` is false and the site works as before. Privacy rules live in the database
 // (supabase/schema.sql), not here.
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./config.js";
+import { schedule } from "./srs.js";
 
 const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/+esm";
-const COLUMNS = "id, title, url, difficulty, tags, notes, is_shared, mode, code, input, updated_at";
+const COLUMNS =
+  "id, title, url, difficulty, tags, notes, is_shared, mode, code, input, updated_at, " +
+  "due_at, interval_days, ease, reps, lapses, last_reviewed_at";
 
 export const cloudEnabled = Boolean(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY);
 
@@ -23,6 +26,12 @@ function client() {
 }
 
 function check({ data, error }, action) {
+  // Missing column/table/function from 002_spaced_repetition.sql (e.g. "column problems.due_at does
+  // not exist", "Could not find the function public.record_review…"): say how to fix it.
+  const missing = /does not exist|could not find/i.test(error?.message ?? "");
+  if (missing && /due_at|interval_days|reviews|record_review/.test(error.message)) {
+    throw new Error("Reviews need a database update: run supabase/002_spaced_repetition.sql in the Supabase SQL Editor.");
+  }
   if (error) throw new Error(`${action} failed: ${error.message}`);
   return data;
 }
@@ -75,6 +84,47 @@ export async function loadProblem(id) {
   }
   const [shared] = check(await sb.rpc("get_shared_problem", { problem_id: id }), "Loading the shared problem") ?? [];
   return shared ? { ...shared, id, is_shared: true, owned: false } : null;
+}
+
+export async function countProblems() {
+  const sb = await client();
+  const res = await sb.from("problems").select("id", { count: "exact", head: true });
+  check(res, "Counting your problems");
+  return res.count ?? 0;
+}
+
+/** How many of your problems are due for review now. */
+export async function countDue() {
+  const sb = await client();
+  const res = await sb.from("problems").select("id", { count: "exact", head: true }).lte("due_at", new Date().toISOString());
+  check(res, "Counting reviews");
+  return res.count ?? 0;
+}
+
+/** Your review history: [{rating, reviewed_at}], newest first. */
+export async function listReviews() {
+  const sb = await client();
+  return check(await sb.from("reviews").select("rating, reviewed_at").order("reviewed_at", { ascending: false }), "Loading your reviews");
+}
+
+/** Log a review and reschedule the problem. Returns the updated problem. */
+export async function recordReview(problem, rating) {
+  const sb = await client();
+  const next = schedule(problem, rating);
+  const rows = check(
+    await sb.rpc("record_review", {
+      p_problem_id: problem.id,
+      p_rating: rating,
+      p_due_at: next.due_at,
+      p_interval_days: next.interval_days,
+      p_ease: next.ease,
+      p_reps: next.reps,
+      p_lapses: next.lapses,
+    }),
+    "Saving the review",
+  );
+  if (!rows?.length) throw new Error("Saving the review failed: the problem wasn't found.");
+  return rows[0];
 }
 
 export async function deleteProblem(id) {

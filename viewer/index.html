@@ -4,23 +4,30 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Algo Visualizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <header>
-      <h1>Algo Visualizer</h1>
+    <header class="topbar">
+      <a class="brand" href="./">Algo Visualizer</a>
+      <nav class="tabs" aria-label="Pages">
+        <a href="./" aria-current="page">Visualize</a>
+        <a href="practice.html">Practice <span id="due-count" class="due-count" hidden></span></a>
+      </nav>
       <fieldset class="modes">
         <legend class="sr-only">Problem style</legend>
         <label><input type="radio" name="mode" value="stdin" checked /> Input/output <small>Codeforces, AtCoder…</small></label>
         <label><input type="radio" name="mode" value="leetcode" /> Function <small>LeetCode</small></label>
       </fieldset>
       <span id="status" role="status"></span>
-      <span id="account" class="account" hidden></span>
+      <div id="account" class="account" hidden></div>
     </header>
 
     <div id="banner" class="banner" role="alert" hidden></div>
 
-    <main>
+    <main class="workspace">
       <section class="left">
         <div id="edit">
           <label for="code">Python code</label>

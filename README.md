@@ -18,6 +18,15 @@ Step with ◀ ▶ or the arrow keys. Click a code line to jump to the next time 
 **Browser extension**: a ▶ Visualize button on LeetCode and Codeforces problems that opens
 them here. See [extension/README.md](extension/README.md) to install it.
 
+**Practice** (sign in with Google): 💾 Save a solution with its key insight, and it comes back
+for review the next day, then less and less often as it sticks (spaced repetition). In a review
+you recall the idea first, reveal your insight, and rate yourself Again / Hard / Good / Easy
+(keys 1–4). Your rank climbs from Newbie to Grandmaster as you save and review; the Practice
+page also shows your streak, activity, and the topic you forget most.
+
+Accounts use Supabase: run `supabase/001_problems.sql`, then `supabase/002_spaced_repetition.sql`
+in the project's SQL Editor, and put the project URL and publishable key in `viewer/config.js`.
+
 What you see at each step:
 
 - **Changes** since the previous step are highlighted green; new objects get a dashed outline.

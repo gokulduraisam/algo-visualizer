@@ -13,7 +13,7 @@ tag = f"?v={version}"
 
 # (file pattern, regex for the URL up to its closing quote, how many matches at least)
 RULES = [
-    ("viewer/*.html", r'(href="style\.css)"', 2),  # index.html and problems.html
+    ("viewer/*.html", r'(href="[\w-]+\.css)"', 3),  # style.css on both pages, practice.css
     ("viewer/*.html", r'(src="[\w-]+\.js)"', 2),
     ("viewer/*.js", r'(from "\./[\w-]+\.js)"', 1),
     ("viewer/*.js", r'(new Worker\("worker\.js)"', 1),

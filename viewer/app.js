@@ -1,6 +1,7 @@
-import { initAccount } from "./account.js";
+import { initSave } from "./account.js";
 import { buildCallTree, hasNestedCalls, layoutCallTree, renderCallTree } from "./calltree.js";
 import { cloudEnabled, loadProblem } from "./cloud.js";
+import { mountNav } from "./nav.js";
 import { renderMemory } from "./render.js";
 import { decodeShare, encodeShare } from "./share.js";
 import { lineHits, nextRun } from "./steps.js";
@@ -388,12 +389,15 @@ showMode(currentMode());
 applySharedLink();
 wire();
 startWorker();
-initAccount({
+mountNav({
+  beforeSignIn: () => saveDraft(currentMode()), // signing in leaves the page; keep unsaved edits
+  onError: (text) => showBanner(text, "error"),
+});
+initSave({
   getRun: () => (result ? lastRun : null),
   getProblem: () => currentProblem,
   setProblem: (problem) => (currentProblem = problem),
   getPage: () => problemPage,
-  beforeSignIn: () => saveDraft(currentMode()), // signing in leaves the page; keep unsaved edits
   notify: setStatus,
   fail: (text) => showBanner(text, "error"),
 });
