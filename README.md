@@ -24,7 +24,10 @@ you recall the idea first, reveal your insight, and rate yourself Again / Hard /
 (keys 1–4). Your rank climbs from Newbie to Grandmaster as you save and review; the Practice
 page also shows your streak, activity, and the topic you forget most.
 
-Practice also has a **topic roadmap** (NeetCode 150 order, with what to study next), your
+**Roadmap**: 18 topics in NeetCode's order, each with the ideas to know first and 135 free
+LeetCode problems to solve, easy to hard, with your progress and the next problem to solve.
+
+Practice also has the roadmap at a glance, your
 **Codeforces** rating, solves and the rating band to practise next (from Codeforces' public
 API), and recall times. The visualizer has a **solve timer** whose time Save fills in.
 

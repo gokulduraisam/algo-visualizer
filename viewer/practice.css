@@ -163,3 +163,7 @@
 .cf-recent { margin: 0; padding-left: 18px; font-size: 14px; }
 .recall-timer { margin: -6px 0 16px; color: var(--muted); font-size: 14px; }
 .recall-timer span { font: 600 14px var(--mono); font-variant-numeric: tabular-nums; }
+.ladder-actions { margin: -4px 0 14px; }
+.ladder-actions .button { padding: 5px 12px; font-size: 13px; }
+.topic a.topic-name { color: inherit; text-decoration: none; }
+.topic a.topic-name:hover { text-decoration: underline; }

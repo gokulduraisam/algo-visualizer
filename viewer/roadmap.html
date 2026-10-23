@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Roadmap | Algo Visualizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="roadmap.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./">Algo Visualizer</a>
+      <nav class="tabs" aria-label="Pages">
+        <a href="./">Visualize</a>
+        <a href="roadmap.html" aria-current="page">Roadmap</a>
+        <a href="practice.html">Practice <span id="due-count" class="due-count" hidden></span></a>
+      </nav>
+      <div id="account" class="account" hidden></div>
+    </header>
+
+    <div id="banner" class="banner" role="alert" hidden></div>
+
+    <main class="roadmap-page">
+      <section class="roadmap-intro" aria-labelledby="roadmap-title">
+        <h1 id="roadmap-title">Your roadmap</h1>
+        <p class="roadmap-lede">
+          For each topic: learn the ideas, then solve the problems, easy to hard. Move on once about half
+          are done; the rest come back in review.
+        </p>
+        <div class="overall">
+          <div class="overall-bar"><span id="overall-fill"></span></div>
+          <p id="overall-text" class="muted"></p>
+        </div>
+      </section>
+
+      <section id="next-card" class="next-card" aria-labelledby="next-title" hidden>
+        <p class="next-label">Next up</p>
+        <h2 id="next-title"></h2>
+        <p id="next-why" class="muted"></p>
+        <div id="next-actions"></div>
+      </section>
+
+      <ol id="stages" class="stages"></ol>
+    </main>
+
+    <script type="module" src="roadmap-page.js"></script>
+  </body>
+</html>

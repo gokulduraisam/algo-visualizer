@@ -4,7 +4,6 @@ import { test } from "node:test";
 import { bucketByRating, practiceRange, solvedProblems } from "../viewer/codeforces.js";
 import { outputsMatch, parseTestCases, verdict } from "../viewer/testcases.js";
 import { formatDuration, parseDuration, stopwatch } from "../viewer/timer.js";
-import { ladder, TOPICS, topicOf } from "../viewer/topics.js";
 
 // ---------- timer ----------
 test("formatDuration: m:ss under an hour, h:mm:ss above", () => {
@@ -19,47 +18,6 @@ test("parseDuration accepts what people type", () => {
   assert.equal(parseDuration(""), null);
   assert.throws(() => parseDuration("soon"), /time/i);
   assert.throws(() => parseDuration("5:75"), /time/i);
-});
-
-// ---------- topics ----------
-test("TOPICS follows the NeetCode roadmap order", () => {
-  assert.equal(TOPICS[0].name, "Arrays & Hashing");
-  assert.equal(TOPICS[1].name, "Two Pointers");
-  assert.ok(TOPICS.some((t) => t.name === "2-D Dynamic Programming"));
-});
-
-test("topicOf maps common tags (yours or LeetCode's) to a roadmap topic", () => {
-  assert.equal(topicOf("hash map"), "Arrays & Hashing");
-  assert.equal(topicOf("Hash Table"), "Arrays & Hashing");
-  assert.equal(topicOf("two pointers"), "Two Pointers");
-  assert.equal(topicOf("dfs"), "Graphs");
-  assert.equal(topicOf("Binary Tree"), "Trees");
-  assert.equal(topicOf("dp"), "1-D Dynamic Programming");
-  assert.equal(topicOf("2d dp"), "2-D Dynamic Programming");
-  assert.equal(topicOf("Priority Queue"), "Heap / Priority Queue");
-  assert.equal(topicOf("my own tag"), null);
-});
-
-test("ladder counts problems per topic and suggests where to go next", () => {
-  const problems = [
-    { tags: ["hash map"], interval_days: 30, lapses: 0 },
-    { tags: ["hash map", "two pointers"], interval_days: 2, lapses: 3 },
-    { tags: ["dfs"], interval_days: 1, lapses: 0 },
-  ];
-  const { rows, next } = ladder(problems);
-  const row = (name) => rows.find((r) => r.topic === name);
-  assert.deepEqual(row("Arrays & Hashing"), { topic: "Arrays & Hashing", solved: 2, remembered: 1, lapses: 3 });
-  assert.equal(row("Two Pointers").solved, 1);
-  assert.equal(row("Graphs").solved, 1);
-  assert.equal(row("Sliding Window").solved, 0);
-  // the first roadmap topic you haven't touched yet
-  assert.deepEqual(next, { topic: "Sliding Window", reason: "next on the roadmap" });
-});
-
-test("ladder points at a shaky topic once the early roadmap is covered", () => {
-  const early = TOPICS.slice(0, 4).map((t) => ({ tags: [t.aliases[0]], interval_days: 30, lapses: 0 }));
-  const shaky = { tags: [TOPICS[1].aliases[0]], interval_days: 2, lapses: 4 };
-  assert.deepEqual(ladder([...early, shaky]).next, { topic: TOPICS[1].name, reason: "you forget it most" });
 });
 
 // ---------- several test cases ----------
@@ -141,6 +99,3 @@ test("verdict: pass / fail against the expected output, error when it crashed, r
   assert.equal(verdict({ ...ok, truncated: true }, "[0,1]", "leetcode"), "cut-off");
 });
 
-test("topic targets add up to the NeetCode 150", () => {
-  assert.equal(TOPICS.reduce((sum, t) => sum + t.target, 0), 150);
-});

@@ -3,8 +3,10 @@
 import { cloudEnabled, deleteProblem, listProblems, listReviews, recordReview } from "./cloud.js";
 import { mountNav, refreshProgress } from "./nav.js";
 import { initCodeforces } from "./practice-codeforces.js";
-import { renderLadder } from "./practice-ladder.js";
+import { renderRoadmapCard } from "./practice-roadmap.js";
 import { activityGrid, practiceSummary, rankFor, streak, xpFor } from "./progress.js";
+import { leetcodeUrl } from "./roadmap-data.js";
+import { roadmapProgress } from "./roadmap.js";
 import { encodeShare } from "./share.js";
 import { formatDays, nextIntervals, RATINGS, reviewStatus } from "./srs.js";
 import { formatDuration } from "./timer.js";
@@ -64,7 +66,7 @@ function renderHome() {
   renderRank();
   renderActivity();
   renderLibrary();
-  renderLadder(problems);
+  renderRoadmapCard(problems);
   $("ladder-card").hidden = false;
   $("rank-card").hidden = false;
   $("activity-card").hidden = false;
@@ -82,15 +84,23 @@ function renderToday() {
     $("today-title").textContent = `${due.length} problem${due.length === 1 ? "" : "s"} to review today`;
     $("today-detail").textContent = names(due);
   } else if (problems.length) {
-    const next = problems.slice().sort((a, b) => new Date(a.due_at) - new Date(b.due_at))[0];
+    const soonest = problems.slice().sort((a, b) => new Date(a.due_at) - new Date(b.due_at))[0];
     $("today-title").textContent = "All caught up";
-    $("today-detail").textContent = `Next up: ${next.title}, ${reviewStatus(next).label.toLowerCase()}. Solve something new in the meantime.`;
+    $("today-detail").textContent = `Next review: ${soonest.title}, ${reviewStatus(soonest).label.toLowerCase()}.`;
   } else {
     $("today-title").textContent = "Start your practice log";
     $("today-detail").textContent =
-      "Visualize a solution and click Save. It comes back here the day after, and then less and less often as it sticks.";
+      "Solve a problem, visualize it and click Save. It comes back here the day after, then less and less often as it sticks.";
   }
-  $("solve-new").className = due.length ? "button" : "button primary big";
+  // The "solve something new" button goes straight to the next roadmap problem.
+  const { next } = roadmapProgress(problems);
+  const solve = $("solve-new");
+  solve.className = due.length ? "button" : "button primary big";
+  if (next) {
+    solve.textContent = `Solve next: ${next.problem.title}`;
+    Object.assign(solve, { href: leetcodeUrl(next.problem.slug), target: "_blank", rel: "noopener" });
+    solve.title = `${next.problem.difficulty}, ${next.topic} (from your roadmap)`;
+  }
 }
 
 function renderRank() {
